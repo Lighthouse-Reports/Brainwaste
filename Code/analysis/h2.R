@@ -8,6 +8,7 @@ library(stringr)
 library(ggplot2)
 library(arrow)
 library(broom)
+library(speedglm)
 
 #set up fps
 output_fp <- 'Results/h2/'
@@ -41,6 +42,7 @@ non_EU_countries <- c('EFTA', 'AME_C_CRB', 'AME_S', 'AME_N', 'ASI_SSE', 'ASI_E',
 
 #loop over countries
 for(country in countries_to_analyze){
+  print(country)
   #load country df
   country_df <- arrow::read_feather(paste0(input_fp, country, '.feather'))
   
@@ -63,6 +65,7 @@ for(country in countries_to_analyze){
   
   #loop over dependent variables
   for(dv in dependent_vars){
+    print(dv)
     #set up output fp and dir
     output_fp_dv <- paste0(output_fp_country, dv, '/')
     dir.create(output_fp_dv, showWarnings = F)
@@ -70,9 +73,10 @@ for(country in countries_to_analyze){
     ### BASIC ###
     #Immigrants only
     #set up formula
-    formula_eu08_basic <- paste0(dv, ' ~ ', 'treat_EU08 * REFYEAR')
+    formula_eu08_basic <- paste0(dv, ' ~ ', 'treat_EU08 * treat_EU08_post')
     #run regression
-    fit_eu08_basic_immigr <- lm(formula = formula_eu08_basic, data = immigr_only_df)
+    fit_eu08_basic_immigr <- try(lm(formula = formula_eu08_basic, data = immigr_only_df))
+    if(is(fit_eu08_basic_immigr, 'try-error')) next
     #transform fit to df
     fit_eu08_basic_immigr_df <- fit_eu08_basic_immigr %>% 
       tidy(conf.int = T, conf.level = 0.95) %>%
@@ -85,7 +89,8 @@ for(country in countries_to_analyze){
     
     #EU-native comparison
     #run regression
-    fit_eu08_basic_eu_native <- lm(formula = formula_eu08_basic, data = eu_native_df)
+    fit_eu08_basic_eu_native <- try(lm(formula = formula_eu08_basic, data = eu_native_df))
+    if(is(fit_eu08_basic_eu_native, 'try-error')) next
     #transform fit to df
     fit_eu08_basic_eu_native_df <- fit_eu08_basic_eu_native %>% 
       tidy(conf.int = T, conf.level = 0.95) %>%
@@ -98,8 +103,9 @@ for(country in countries_to_analyze){
     #Immigrants only
     #set up formula
     #run regression
-    formula_eu13_basic <- paste0(dv, ' ~ ', 'treat_EU13 * REFYEAR')
-    fit_eu13_basic_immigr <- lm(formula = formula_eu13_basic, data = immigr_only_df)
+    formula_eu13_basic <- paste0(dv, ' ~ ', 'treat_EU13 * treat_EU13_post')
+    fit_eu13_basic_immigr <- try(lm(formula = formula_eu13_basic, data = immigr_only_df))
+    if(is(fit_eu13_basic_immigr, 'try-error')) next
     #transform fit to df
     fit_eu13_basic_immigr_df <- fit_eu13_basic_immigr %>% 
       tidy(conf.int = T, conf.level = 0.95) %>%
@@ -111,7 +117,8 @@ for(country in countries_to_analyze){
     
     #EU-native comparison
     #run regression
-    fit_eu13_basic_eu_native <- lm(formula = formula_eu13_basic, data = eu_native_df)
+    fit_eu13_basic_eu_native <- try(lm(formula = formula_eu13_basic, data = eu_native_df))
+    if(is(fit_eu13_basic_eu_native, 'try-error')) next
     #transform fit to df
     fit_eu13_basic_eu_native_df <- fit_eu13_basic_eu_native %>% 
       tidy(conf.int = T, conf.level = 0.95) %>%
@@ -126,7 +133,8 @@ for(country in countries_to_analyze){
     #set up formula
     formula_eu08_controls <- paste(c(formula_eu08_basic, personal_controls_basic), collapse = ' + ')
     #run regression
-    fit_eu08_controls_immigr <- lm(formula = formula_eu08_controls, data = immigr_only_df)
+    fit_eu08_controls_immigr <- try(lm(formula = formula_eu08_controls, data = immigr_only_df))
+    if(is(fit_eu08_controls_immigr, 'try-error')) next
     #transform fit to df
     fit_eu08_controls_immigr_df <- fit_eu08_controls_immigr %>% 
       tidy(conf.int = T, conf.level = 0.95) %>%
@@ -138,7 +146,8 @@ for(country in countries_to_analyze){
     
     #EU-native comparison
     #run regression
-    fit_eu08_controls_eu_native <- lm(formula = formula_eu08_controls, data = eu_native_df)
+    fit_eu08_controls_eu_native <- try(lm(formula = formula_eu08_controls, data = eu_native_df))
+    if(is(fit_eu08_controls_eu_native, 'try-error')) next
     #transform fit to df
     fit_eu08_controls_eu_native_df <- fit_eu08_controls_eu_native %>% 
       tidy(conf.int = T, conf.level = 0.95) %>%
@@ -152,7 +161,8 @@ for(country in countries_to_analyze){
     #set up formula
     formula_eu13_controls <- paste(c(formula_eu13_basic, personal_controls_basic), collapse = ' + ')
     #run regression
-    fit_eu13_controls_immigr <- lm(formula = formula_eu13_controls, data = immigr_only_df)
+    fit_eu13_controls_immigr <- try(lm(formula = formula_eu13_controls, data = immigr_only_df))
+    if(is(fit_eu13_controls_immigr, 'try-error')) next
     #transform fit to df
     fit_eu13_controls_immigr_df <- fit_eu13_controls_immigr %>% 
       tidy(conf.int = T, conf.level = 0.95) %>%
@@ -164,7 +174,8 @@ for(country in countries_to_analyze){
     
     #EU-native comparison
     #run regression
-    fit_eu13_controls_eu_native <- lm(formula = formula_eu13_controls, data = eu_native_df)
+    fit_eu13_controls_eu_native <- try(lm(formula = formula_eu13_controls, data = eu_native_df))
+    if(is(fit_eu13_controls_eu_native, 'try-error')) next
     #transform fit to df
     fit_eu13_controls_eu_native_df <- fit_eu13_controls_eu_native %>% 
       tidy(conf.int = T, conf.level = 0.95) %>%
@@ -179,7 +190,8 @@ for(country in countries_to_analyze){
     #set up formula
     formula_eu08_region_fe <- paste(c(formula_eu08_controls, region_fe), collapse = ' + ')
     #run regression
-    fit_eu08_region_fe_immigr <- lm(formula = formula_eu08_region_fe, data = immigr_only_df)
+    fit_eu08_region_fe_immigr <- try(lm(formula = formula_eu08_region_fe, data = immigr_only_df))
+    if(is(fit_eu08_region_fe_immigr, 'try-error')) next
     #transform fit to df
     fit_eu08_region_fe_immigr_df <- fit_eu08_region_fe_immigr %>% 
       tidy(conf.int = T, conf.level = 0.95) %>%
@@ -191,7 +203,8 @@ for(country in countries_to_analyze){
     
     #EU-native comparison
     #run regression
-    fit_eu08_region_fe_eu_native <- lm(formula = formula_eu08_region_fe, data = eu_native_df)
+    fit_eu08_region_fe_eu_native <- try(lm(formula = formula_eu08_region_fe, data = eu_native_df))
+    if(is(fit_eu08_region_fe_eu_native, 'try-error')) next
     #transform fit to df
     fit_eu08_region_fe_eu_native_df <- fit_eu08_region_fe_eu_native %>% 
       tidy(conf.int = T, conf.level = 0.95) %>%
@@ -204,7 +217,8 @@ for(country in countries_to_analyze){
     #Immigrants only
     #set up formula
     formula_eu13_region_fe <- paste(c(formula_eu13_controls, region_fe), collapse = ' + ')
-    fit_eu13_region_fe_immigr <- lm(formula = formula_eu13_region_fe, data = immigr_only_df)
+    fit_eu13_region_fe_immigr <- try(lm(formula = formula_eu13_region_fe, data = immigr_only_df))
+    if(is(fit_eu13_region_fe_immigr, 'try-error')) next
     #transform fit to df
     fit_eu13_region_fe_immigr_df <- fit_eu13_region_fe_immigr %>% 
       tidy(conf.int = T, conf.level = 0.95) %>%
@@ -216,7 +230,8 @@ for(country in countries_to_analyze){
     
     #EU-native comparison
     #run regression
-    fit_eu13_region_fe_eu_native <- lm(formula = formula_eu13_region_fe, data = eu_native_df)
+    fit_eu13_region_fe_eu_native <- try(lm(formula = formula_eu13_region_fe, data = eu_native_df))
+    if(is(fit_eu13_region_fe_eu_native, 'try-error')) next
     #transform fit to df
     fit_eu13_region_fe_eu_native_df <- fit_eu13_region_fe_eu_native %>% 
       tidy(conf.int = T, conf.level = 0.95) %>%
@@ -230,9 +245,10 @@ for(country in countries_to_analyze){
     if(sum(country_df$treat_country, na.rm = T) > 0){
       ###BASIC###
       #set up formula
-      formula_treatcountry_basic <- paste0(dv, ' ~ ', 'treat_country * REFYEAR')
+      formula_treatcountry_basic <- paste0(dv, ' ~ ', 'treat_country * treat_country_post')
       #run regression
-      fit_treatcountry_basic_eu_native <- lm(formula = formula_treatcountry_basic, data = eu_native_df)
+      fit_treatcountry_basic_eu_native <- try(lm(formula = formula_treatcountry_basic, data = eu_native_df))
+      if(is(fit_treatcountry_basic_eu_native, 'try-error')) next
       #transform fit to df
       fit_treatcountry_basic_eu_native_df <- fit_treatcountry_basic_eu_native %>%
         tidy(conf.int = T, conf.level = 0.95) %>%
@@ -244,7 +260,8 @@ for(country in countries_to_analyze){
       
       #Non-EU native comparison
       #run regression
-      fit_treatcountry_basic_noneu_native <- lm(formula = formula_treatcountry_basic, data = noneu_native_df)
+      fit_treatcountry_basic_noneu_native <- try(lm(formula = formula_treatcountry_basic, data = noneu_native_df))
+      if(is(fit_treatcountry_basic_noneu_native, 'try-error')) next
       #transform fit to df
       fit_treatcountry_basic_noneu_native_df <- fit_treatcountry_basic_noneu_native %>%
         tidy(conf.int = T, conf.level = 0.95) %>%
@@ -258,7 +275,8 @@ for(country in countries_to_analyze){
       #set up formula
       formula_treatcountry_controls <- paste(c(formula_treatcountry_basic, personal_controls_basic), collapse = ' + ')
       #run regression
-      fit_treatcountry_controls_eu_native <- lm(formula = formula_treatcountry_controls, data = eu_native_df)
+      fit_treatcountry_controls_eu_native <- try(lm(formula = formula_treatcountry_controls, data = eu_native_df))
+      if(is(fit_treatcountry_controls_eu_native, 'try-error')) next
       #transform fit to df
       fit_treatcountry_controls_eu_native_df <- fit_treatcountry_controls_eu_native %>%
         tidy(conf.int = T, conf.level = 0.95) %>%
@@ -270,7 +288,8 @@ for(country in countries_to_analyze){
       
       #Non-EU native comparison
       #run regression
-      fit_treatcountry_controls_noneu_native <- lm(formula = formula_treatcountry_controls, data = noneu_native_df)
+      fit_treatcountry_controls_noneu_native <- try(lm(formula = formula_treatcountry_controls, data = noneu_native_df))
+      if(is(fit_treatcountry_controls_noneu_native, 'try-error')) next
       #transform fit to df
       fit_treatcountry_controls_noneu_native_df <- fit_treatcountry_controls_noneu_native %>%
         tidy(conf.int = T, conf.level = 0.95) %>%
@@ -284,7 +303,8 @@ for(country in countries_to_analyze){
       #set up formula
       formula_treatcountry_region_fe <- paste(c(formula_treatcountry_controls, region_fe), collapse = ' + ')
       #run regression
-      fit_treatcountry_region_fe_eu_native <- lm(formula = formula_treatcountry_region_fe, data = eu_native_df)
+      fit_treatcountry_region_fe_eu_native <- try(lm(formula = formula_treatcountry_region_fe, data = eu_native_df))
+      if(is(fit_treatcountry_region_fe_eu_native, 'try-error')) next
       #transform fit to df
       fit_treatcountry_region_fe_eu_native_df <- fit_treatcountry_region_fe_eu_native %>%
         tidy(conf.int = T, conf.level = 0.95) %>%
@@ -296,7 +316,8 @@ for(country in countries_to_analyze){
       
       #Non-EU native comparison
       #run regression
-      fit_treatcountry_region_fe_noneu_native <- lm(formula = formula_treatcountry_region_fe, data = noneu_native_df)
+      fit_treatcountry_region_fe_noneu_native <- try(lm(formula = formula_treatcountry_region_fe, data = noneu_native_df))
+      if(is(fit_treatcountry_region_fe_noneu_native, 'try-error')) next
       #transform fit to df
       fit_treatcountry_region_fe_noneu_native_df <- fit_treatcountry_region_fe_noneu_native %>%
         tidy(conf.int = T, conf.level = 0.95) %>%
@@ -309,15 +330,17 @@ for(country in countries_to_analyze){
     
     #Interaction effects
     for(interact_var in interact_vars){
+      print(paste0('Interact: ', interact_var))
       output_fp_interact <- paste0(output_fp_dv, interact_var, '/')
       dir.create(output_fp_interact, showWarnings = F)
       
       ### BASIC ###
       #Immigrants only
       #set up formula
-      formula_eu08_basic <- paste0(dv, ' ~ ', 'treat_EU08 * REFYEAR', ' * ', interact_var)
+      formula_eu08_basic <- paste0(dv, ' ~ ', 'treat_EU08 * treat_EU08_post', ' * ', interact_var)
       #run regression
-      fit_eu08_basic_immigr <- lm(formula = formula_eu08_basic, data = immigr_only_df)
+      fit_eu08_basic_immigr <- try(lm(formula = formula_eu08_basic, data = immigr_only_df))
+      if(is(fit_eu08_basic_immigr, 'try-error')) next
       #transform fit to df
       fit_eu08_basic_immigr_df <- fit_eu08_basic_immigr %>% 
         tidy(conf.int = T, conf.level = 0.95) %>%
@@ -329,7 +352,8 @@ for(country in countries_to_analyze){
       
       #EU-native comparison
       #run regression
-      fit_eu08_basic_eu_native <- lm(formula = formula_eu08_basic, data = eu_native_df)
+      fit_eu08_basic_eu_native <- try(lm(formula = formula_eu08_basic, data = eu_native_df))
+      if(is(fit_eu08_basic_eu_native, 'try-error')) next
       #transform fit to df
       fit_eu08_basic_eu_native_df <- fit_eu08_basic_eu_native %>% 
         tidy(conf.int = T, conf.level = 0.95) %>%
@@ -341,9 +365,10 @@ for(country in countries_to_analyze){
       
       #Immigrants only
       #set up formula
-      formula_eu13_basic <- paste0(dv, ' ~ ', 'treat_EU13 * REFYEAR', ' * ', interact_var)
+      formula_eu13_basic <- paste0(dv, ' ~ ', 'treat_EU13 * treat_EU13_post', ' * ', interact_var)
       #run regression
-      fit_eu13_basic_immigr <- lm(formula = formula_eu13_basic, data = immigr_only_df)
+      fit_eu13_basic_immigr <- try(lm(formula = formula_eu13_basic, data = immigr_only_df))
+      if(is(fit_eu13_basic_immigr, 'try-error')) next
       #transform fit to df
       fit_eu13_basic_immigr_df <- fit_eu13_basic_immigr %>% 
         tidy(conf.int = T, conf.level = 0.95) %>%
@@ -355,7 +380,8 @@ for(country in countries_to_analyze){
       
       #EU-native comparison
       #run regression
-      fit_eu13_basic_eu_native <- lm(formula = formula_eu13_basic, data = eu_native_df)
+      fit_eu13_basic_eu_native <- try(lm(formula = formula_eu13_basic, data = eu_native_df))
+      if(is(fit_eu13_basic_eu_native, 'try-error')) next
       #transform fit to df
       fit_eu13_basic_eu_native_df <- fit_eu13_basic_eu_native %>% 
         tidy(conf.int = T, conf.level = 0.95) %>%
@@ -370,7 +396,8 @@ for(country in countries_to_analyze){
       #set up formula
       formula_eu08_controls <- paste(c(formula_eu08_basic, personal_controls_basic), collapse = ' + ')
       #run regression
-      fit_eu08_controls_immigr <- lm(formula = formula_eu08_controls, data = immigr_only_df)
+      fit_eu08_controls_immigr <- try(lm(formula = formula_eu08_controls, data = immigr_only_df))
+      if(is(fit_eu08_controls_immigr, 'try-error')) next
       #transform fit to df
       fit_eu08_controls_immigr_df <- fit_eu08_controls_immigr %>% 
         tidy(conf.int = T, conf.level = 0.95) %>%
@@ -382,7 +409,8 @@ for(country in countries_to_analyze){
       
       #EU-native comparison
       #run regression
-      fit_eu08_controls_eu_native <- lm(formula = formula_eu08_controls, data = eu_native_df)
+      fit_eu08_controls_eu_native <- try(lm(formula = formula_eu08_controls, data = eu_native_df))
+      if(is(fit_eu08_controls_eu_native, 'try-error')) next
       #transform fit to df
       fit_eu08_controls_eu_native_df <- fit_eu08_controls_eu_native %>% 
         tidy(conf.int = T, conf.level = 0.95) %>%
@@ -396,7 +424,8 @@ for(country in countries_to_analyze){
       #set up formula
       formula_eu13_controls <- paste(c(formula_eu13_basic, personal_controls_basic), collapse = ' + ')
       #run regression
-      fit_eu13_controls_immigr <- lm(formula = formula_eu13_controls, data = immigr_only_df)
+      fit_eu13_controls_immigr <- try(lm(formula = formula_eu13_controls, data = immigr_only_df))
+      if(is(fit_eu13_controls_immigr, 'try-error')) next
       #transform fit to df
       fit_eu13_controls_immigr_df <- fit_eu13_controls_immigr %>% 
         tidy(conf.int = T, conf.level = 0.95) %>%
@@ -408,7 +437,8 @@ for(country in countries_to_analyze){
       
       #EU-native comparison
       #run regression
-      fit_eu13_controls_eu_native <- lm(formula = formula_eu13_controls, data = eu_native_df)
+      fit_eu13_controls_eu_native <- try(lm(formula = formula_eu13_controls, data = eu_native_df))
+      if(is(fit_eu13_controls_eu_native, 'try-error')) next
       #transform fit to df
       fit_eu13_controls_eu_native_df <- fit_eu13_controls_eu_native %>% 
         tidy(conf.int = T, conf.level = 0.95) %>%
@@ -423,7 +453,8 @@ for(country in countries_to_analyze){
       #set up formula
       formula_eu08_region_fe <- paste(c(formula_eu08_controls, region_fe), collapse = ' + ')
       #run regression
-      fit_eu08_region_fe_immigr <- lm(formula = formula_eu08_region_fe, data = immigr_only_df)
+      fit_eu08_region_fe_immigr <- try(lm(formula = formula_eu08_region_fe, data = immigr_only_df))
+      if(is(fit_eu08_region_fe_immigr, 'try-error')) next
       #transform fit to df
       fit_eu08_region_fe_immigr_df <- fit_eu08_region_fe_immigr %>% 
         tidy(conf.int = T, conf.level = 0.95) %>%
@@ -435,7 +466,8 @@ for(country in countries_to_analyze){
       
       #EU-native comparison
       #run regression
-      fit_eu08_region_fe_eu_native <- lm(formula = formula_eu08_region_fe, data = eu_native_df)
+      fit_eu08_region_fe_eu_native <- try(lm(formula = formula_eu08_region_fe, data = eu_native_df))
+      if(is(fit_eu08_region_fe_eu_native, 'try-error')) next
       #transform fit to df
       fit_eu08_region_fe_eu_native_df <- fit_eu08_region_fe_eu_native %>% 
         tidy(conf.int = T, conf.level = 0.95) %>%
@@ -449,7 +481,8 @@ for(country in countries_to_analyze){
       #set up formula
       formula_eu13_region_fe <- paste(c(formula_eu13_controls, region_fe), collapse = ' + ')
       #run regression
-      fit_eu13_region_fe_immigr <- lm(formula = formula_eu13_region_fe, data = immigr_only_df)
+      fit_eu13_region_fe_immigr <- try(lm(formula = formula_eu13_region_fe, data = immigr_only_df))
+      if(is(fit_eu13_region_fe_immigr, 'try-error')) next
       #transform fit to df
       fit_eu13_region_fe_immigr_df <- fit_eu13_region_fe_immigr %>% 
         tidy(conf.int = T, conf.level = 0.95) %>%
@@ -461,7 +494,8 @@ for(country in countries_to_analyze){
       
       #EU-native comparison
       #run regression
-      fit_eu13_region_fe_eu_native <- lm(formula = formula_eu13_region_fe, data = eu_native_df)
+      fit_eu13_region_fe_eu_native <- try(lm(formula = formula_eu13_region_fe, data = eu_native_df))
+      if(is(fit_eu13_region_fe_eu_native, 'try-error')) next
       #transform fit to df
       fit_eu13_region_fe_eu_native_df <- fit_eu13_region_fe_eu_native %>% 
         tidy(conf.int = T, conf.level = 0.95) %>%
@@ -476,9 +510,10 @@ for(country in countries_to_analyze){
         ###BASIC###
         #EU-native comparison
         #set up formula
-        formula_treatcountry_basic <- paste0(dv, ' ~ ', 'treat_country * REFYEAR', ' * ', interact_var)
+        formula_treatcountry_basic <- paste0(dv, ' ~ ', 'treat_country * treat_country_post', ' * ', interact_var)
         #run regression
-        fit_treatcountry_basic_eu_native <- lm(formula = formula_treatcountry_basic, data = eu_native_df)
+        fit_treatcountry_basic_eu_native <- try(lm(formula = formula_treatcountry_basic, data = eu_native_df))
+        if(is(fit_treatcountry_basic_eu_native, 'try-error')) next
         #transform fit to df
         fit_treatcountry_basic_eu_native_df <- fit_treatcountry_basic_eu_native %>%
           tidy(conf.int = T, conf.level = 0.95) %>%
@@ -490,7 +525,8 @@ for(country in countries_to_analyze){
         
         #Non-EU native comparison
         #run regression
-        fit_treatcountry_basic_noneu_native <- lm(formula = formula_treatcountry_basic, data = noneu_native_df)
+        fit_treatcountry_basic_noneu_native <- try(lm(formula = formula_treatcountry_basic, data = noneu_native_df))
+        if(is(fit_treatcountry_basic_noneu_native, 'try-error')) next
         #transform fit to df
         fit_treatcountry_basic_noneu_native_df <- fit_treatcountry_basic_noneu_native %>%
           tidy(conf.int = T, conf.level = 0.95) %>%
@@ -505,7 +541,8 @@ for(country in countries_to_analyze){
         #set up formula
         formula_treatcountry_controls <- paste(c(formula_treatcountry_basic, personal_controls_basic), collapse = ' + ')
         #run regression
-        fit_treatcountry_controls_eu_native <- lm(formula = formula_treatcountry_controls, data = eu_native_df)
+        fit_treatcountry_controls_eu_native <- try(lm(formula = formula_treatcountry_controls, data = eu_native_df))
+        if(is(fit_treatcountry_controls_eu_native, 'try-error')) next
         #transform fit to df
         fit_treatcountry_controls_eu_native_df <- fit_treatcountry_controls_eu_native %>%
           tidy(conf.int = T, conf.level = 0.95) %>%
@@ -517,7 +554,8 @@ for(country in countries_to_analyze){
         
         #Non-EU native comparison
         #run regression
-        fit_treatcountry_controls_noneu_native <- lm(formula = formula_treatcountry_controls, data = noneu_native_df)
+        fit_treatcountry_controls_noneu_native <- try(lm(formula = formula_treatcountry_controls, data = noneu_native_df))
+        if(is(fit_treatcountry_controls_noneu_native, 'try-error')) next
         #transform fit to df
         fit_treatcountry_controls_noneu_native_df <- fit_treatcountry_controls_noneu_native %>%
           tidy(conf.int = T, conf.level = 0.95) %>%
@@ -532,7 +570,8 @@ for(country in countries_to_analyze){
         #set up formula
         formula_treatcountry_region_fe <- paste(c(formula_treatcountry_controls, region_fe), collapse = ' + ')
         #run regression
-        fit_treatcountry_region_fe_eu_native <- lm(formula = formula_treatcountry_region_fe, data = eu_native_df)
+        fit_treatcountry_region_fe_eu_native <- try(lm(formula = formula_treatcountry_region_fe, data = eu_native_df))
+        if(is(fit_treatcountry_region_fe_eu_native, 'try-error')) next
         #transform fit to df
         fit_treatcountry_region_fe_eu_native_df <- fit_treatcountry_region_fe_eu_native %>%
           tidy(conf.int = T, conf.level = 0.95) %>%
@@ -544,7 +583,8 @@ for(country in countries_to_analyze){
         
         #Non-EU native comparison
         #run regression
-        fit_treatcountry_region_fe_noneu_native <- lm(formula = formula_treatcountry_region_fe, data = noneu_native_df)
+        fit_treatcountry_region_fe_noneu_native <- try(lm(formula = formula_treatcountry_region_fe, data = noneu_native_df))
+        if(is(fit_treatcountry_region_fe_noneu_native, 'try-error')) next
         #transform fit to df
         fit_treatcountry_region_fe_noneu_native_df <- fit_treatcountry_region_fe_noneu_native %>%
           tidy(conf.int = T, conf.level = 0.95) %>%

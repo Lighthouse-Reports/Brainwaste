@@ -156,7 +156,7 @@ for(country in countries_to_analyze){
             fit_df <- read.csv(fit_fp)
             #restrict rows to three way interaction effects and format columns
             fit_df_relevant <- fit_df %>%
-              dplyr::filter(grepl(":REFYEAR:", term, fixed = T)) %>%
+              dplyr::filter(grepl("post:", term, fixed = T)) %>%
               dplyr::select(term, estimate, p.value, conf.low, conf.high) %>%
               dplyr::rename(p_value = p.value,
                             lower_conf = conf.low,

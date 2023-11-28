@@ -66,7 +66,7 @@ regulated <- read.xlsx('Input Data/Config/regulated_professions.xlsx') %>%
                                    country == "Cyprus" ~ "CY",
                                    country == "Lithuania" ~ "LT",
                                    country == "Estonia" ~ "EE")) %>%
-  select(-country)
+  dplyr::select(-country)
 #TODO: potentially exclude observations that apply on the subnational level
 
 #NA for regulated df is 0, to prevent merging on NA professions in the ELF
@@ -119,7 +119,7 @@ for(country in countries_to_analyze){
   #calculate shortage ratio by dividing # looking over # found by profession
   shortage_df <- full_join(shortage_found, shortage_looking, by = c('REFYEAR', 'ISCO88_3D' = 'ISCO88_3DPR', 'ISCO08_3D' = 'ISCO08_3DPR')) %>%
     mutate(shortage_ratio = count_looking/count_found) %>%
-    select(REFYEAR, ISCO88_3D, ISCO08_3D, shortage_ratio)
+    dplyr::select(REFYEAR, ISCO88_3D, ISCO08_3D, shortage_ratio)
   
   #save country level shortage data
   write.csv(shortage_df, paste0(shortage_fp, 'shortage_ISCO_', country, '.csv'))
@@ -155,12 +155,23 @@ for(country in countries_to_analyze){
               count = n()) %>%
     ungroup() %>%
     filter(count > 10) %>%
-    select(-count)
+    dplyr::select(-count)
   
   #join country df with propensity_regulated variable
   country_df <- country_df %>%
     left_join(propensity_regulated, by = c('hatfield1d', 'hat_isced'))
   
+  #generate propensity to work in shortage occupation using the same principle as for propensity_regulated
+  propensity_shortage <- country_df %>%
+    filter(EMPSTAT == 1, !is.na(hatfield1d)) %>%
+    group_by(hat_isced, hatfield1d) %>%
+    summarise(propensity_shortage = mean(shortage_ratio, na.rm = T),
+              count = n()) %>%
+    ungroup() %>%
+    filter(count > 10) %>%
+    dplyr::select(-count)
+  country_df <- country_df %>%
+    left_join(propensity_shortage, by = c('hatfield1d', 'hat_isced'))
   #TODO: merge with ISCO spreadsheet
   #TODO match income deciles to real euro values
   

@@ -8,6 +8,7 @@ library(stringr)
 library(ggplot2)
 library(arrow)
 library(broom)
+library(speedglm)
 
 #set up input and output fps
 input_fp <- 'Input Data/ELF_Merged/final/merged_country_final_2006_onwards_'
@@ -89,7 +90,7 @@ for(country in countries_to_analyze){
       
       #basic regression analysis: DV ~ IV
       formula_basic <- paste0(dv, ' ~ ', iv)
-      fit_basic <- try(lm(data = cur_df, formula = formula_basic))
+      fit_basic <- try(speedlm(data = cur_df, formula = formula_basic))
       if(is(fit_basic, 'try-error')) next
       
       #transform fit object to df
@@ -105,7 +106,8 @@ for(country in countries_to_analyze){
       
       #regression analysis including personal controls: DV ~ IV + personal_controls_basic
       formula_cotrols_basic <- paste(c(formula_basic, personal_controls_basic), collapse = ' + ')
-      fit_controls_basic <- lm(data = cur_df, formula = formula_cotrols_basic)
+      fit_controls_basic <- try(speedlm(data = cur_df, formula = formula_cotrols_basic))
+      if(is(fit_controls_basic, 'try-error')) next
       
       #transform fit object to df
       fit_controls_basic_df <- fit_controls_basic %>% 
@@ -120,7 +122,8 @@ for(country in countries_to_analyze){
       
       #regression analysis including extensive personal controls: DV ~ IV + personal_controls_basic + personal_controls_extensive
       formula_cotrols_extensive <- paste(c(formula_cotrols_basic, personal_countrols_extensive), collapse = ' + ')
-      fit_controls_extensive <- lm(data = cur_df, formula = formula_cotrols_extensive)
+      fit_controls_extensive <- try(speedlm(data = cur_df, formula = formula_cotrols_extensive))
+      if(is(fit_controls_extensive, 'try-error')) next
       
       #transform fit object to df
       fit_controls_extensive_df <- fit_controls_extensive %>% 
@@ -142,7 +145,8 @@ for(country in countries_to_analyze){
         #regression analysis including time fixed effects: 
         #DV ~ IV + personal_controls_basic + personal_controls_extensive + time_FEs
         formula_year_fe <- paste(c(formula_cotrols_extensive, time_fe), collapse = ' + ')
-        fit_year_fe <- lm(data = cur_df, formula = formula_year_fe)
+        fit_year_fe <- try(speedlm(data = cur_df, formula = formula_year_fe))
+        if(is(fit_year_fe, 'try-error')) next
         
         #transform fit object to df
         fit_year_fe_df <- fit_year_fe %>% 
@@ -160,7 +164,8 @@ for(country in countries_to_analyze){
       #Regression analysis with region FEs
       #DV ~ IV + personal_controls_basic + personal_controls_extensive + time_FEs + region_FEs
       formula_year_region_fe <- paste(c(formula_year_fe, region_fe), collapse = ' + ')
-      fit_year_region_fe <- lm(data = cur_df, formula = formula_year_region_fe)
+      fit_year_region_fe <- try(speedlm(data = cur_df, formula = formula_year_region_fe))
+      if(is(fit_year_region_fe, 'try-error')) next
       
       #transform fit object to df
       fit_year_region_fe_df <- fit_year_region_fe %>% 
@@ -182,7 +187,7 @@ for(country in countries_to_analyze){
         
         #Basic interaction regression analysis: DV ~ IV * Interact
         formula_basic_interact <- paste0(dv, ' ~ ', iv, ' * ', interact)
-        fit_basic_interact <- try(lm(data = cur_df, formula = formula_basic_interact))
+        fit_basic_interact <- try(speedlm(data = cur_df, formula = formula_basic_interact))
         if(is(fit_basic_interact, 'try-error')) next
         
         #transform fit object to df
@@ -212,7 +217,8 @@ for(country in countries_to_analyze){
         
         #Regression analysis with interaction effects and all controls: DV ~ IV * Interact + Controls + FEs
         formula_full_controls_interact <- paste0(c(formula_basic_interact, full_controls), collapse = ' + ')
-        fit_full_control_interact <- lm(data = cur_df, formula = formula_full_controls_interact)
+        fit_full_control_interact <- try(speedlm(data = cur_df, formula = formula_full_controls_interact))
+        if(is(fit_full_control_interact, 'try-error')) next
         
         #transform fit object to df
         fit_full_control_interact_df <- fit_full_control_interact %>% 

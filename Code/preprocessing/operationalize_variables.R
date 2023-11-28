@@ -69,6 +69,9 @@ for(country in countries_to_analyze){
                                    recognition == '6' & REFYEAR == 2021 ~ 'not_applied_costs',
                                    recognition %in% c('7', '8', '9') & REFYEAR == 2021 ~ 'not_applied_other',
                                    .default = recognition),
+           received_recognition = case_when(recognition == 'applied_completed' ~ 1,
+                                            !is.na(recognition) ~ 0,
+                                            .default = NA),
            is_pt = case_when(FTPT == 2 ~ 1,
                              !is.na(FTPT) ~0,
                              .default = NA),
@@ -91,11 +94,14 @@ for(country in countries_to_analyze){
     )
   
   # construct underemployment variables
-  country_df$hatage <- country_df$AGE - (country_df$REFYEAR - country_df$HATYEAR)
-  country_df$hatage <- ifelse(country_df$hatage > 30, NA, country_df$hatage)
-  country_df$hat_isced <- trunc(country_df$HATLEVEL / 100, digits = 0)
   country_df <- country_df %>%
     group_by(REFYEAR, ISCO88_3D, ISCO08_3D) %>%
+    mutate(hatage = AGE - REFYEAR - HATYEAR,
+           hatage = ifelse(hatage > 30, NA, hatage),
+           hat_isced = trunc(HATLEVEL / 100, digits = 0),
+           is_college_educated = case_when(hat_isced %in% c(6, 7, 8) ~ 1,
+                                           !is.na(hat_isced) ~ 0,
+                                           .default = NA)) %>%
     mutate(overed_zscore_hat_isced = (hat_isced - mean(hat_isced, na.rm = T))/sd(hat_isced, na.rm = T),
            overed_zscore_hatage = (hatage - mean(hatage, na.rm = T))/sd(hatage, na.rm = T)) %>%
     ungroup() %>%
@@ -103,8 +109,8 @@ for(country in countries_to_analyze){
            overed_zscore_hatage = ifelse(is.na(ISCO88_3D) & is.na(ISCO08_3D), NA, overed_zscore_hatage)) %>%
     mutate(overed_1sd_hat_isced = ifelse(overed_zscore_hat_isced > 1, 1, 0),
            overed_1sd_hatage = ifelse(overed_zscore_hatage > 1, 1, 0))
-  print('Correlation between ISCED and HATAGE overeducation measures:')
-  print(cor(country_df$overed_zscore_hat_isced, country_df$overed_zscore_hatage, use = 'complete.obs'))
+  # print('Correlation between ISCED and HATAGE overeducation measures:')
+  # print(cor(country_df$overed_zscore_hat_isced, country_df$overed_zscore_hatage, use = 'complete.obs'))
   country_df$uemp <- ifelse(country_df$ILOSTAT == 1 & country_df$FTPT == 2 & country_df$WISHMORE == 2 & country_df$AVAILBLE == 1, 1, 0)
   
   #construct migration variables
@@ -181,28 +187,37 @@ for(country in countries_to_analyze){
                                    .default = NA) %>%
     mutate(educated_abroad = case_when(is_immigrant == 1 & (REFYEAR - years_in_country) >= HATYEAR ~ 1,
                                        is_immigrant == 1 & (REFYEAR - years_in_country) < HATYEAR ~ 0,
-                                       is_immigrant == 1 & is.na(years_in_country)  ~ 2,
-                                       is_immigrant == 1 & is.na(HATYEAR)  ~ 2,
-                                       .default = NA))
+                                       .default = NA),
+           previous_job_abroad = case_when((REFYEAR - years_in_country) >= YEARPR ~ 1,
+                                           (REFYEAR - years_in_country) < YEARPR ~ 0,
+                                           .default = NA))
   
   #construct treatment
  
   #construct treatment based on national legal changes (Italy Spain)
   #TODO check which countries the legislation actually applies to (EFTA yes or no?)
-  #TODO operationalize job specific
+  #TODO operationalize for jobs in some way
+  EU_ISCO08 <- c(216, 226, 221, 222, 225)
+  EU_ISCO88 <- c(214, 222, 221, 223)
   EU_countries <- c('EUR_NEU28_NEFTA', 'EU15', 'NMS10', 'EUR_NEU27_2020_NEFTA', 'EU27_2020')
   country_df <- country_df %>%
     #construct treatment for EU directive (2008)
-    mutate(treat_EU08 = case_when(REFYEAR > 2008 & COUNTRYB %in% EU_countries ~ 1,
+    mutate(treat_EU08 = case_when(COUNTRYB %in% EU_countries ~ 1,
                                   .default = 0),
            #construct treatment for EU directive (2013)
-           treat_EU13 = case_when(REFYEAR > 2008 & COUNTRYB %in% EU_countries ~ 1,
+           treat_EU13 = case_when(COUNTRYB %in% EU_countries ~ 1,
                                   .default = 0),
            #construct country specific treatment
-           treat_country = case_when(COUNTRY == 'ES' & REFYEAR > 2014 & is_immigrant == 1 ~ 1, #TODO add more countries as necessary
-                                     COUNTRY == 'IT' & REFYEAR > 2009 & is_immigrant == 1 ~ 1,
-                                     .default = 0))
-  
+           treat_country = case_when(COUNTRY %in% c('ES', 'IT') & is_immigrant == 1 ~ 1,
+                                     COUNTRY %in% c('ES', 'IT') & is_immigrant == 0 ~ 0,
+                                     .default = NA),
+           treat_EU08_post = ifelse(REFYEAR > 2008, 1, 0),
+           treat_EU13_post = ifelse(REFYEAR > 2013, 1, 0),
+           treat_country_post = case_when(COUNTRY == 'ES' & REFYEAR > 2014 ~ 1,
+                                          COUNTRY == 'ES' & REFYEAR <= 2014 ~ 0,
+                                          COUNTRY == 'IT' & REFYEAR > 2009 ~ 1,
+                                          COUNTRY == 'IT' & REFYEAR <= 2009 ~ 0)
+    )
   #skilled vs unskilled
   country_df <- country_df %>%
     mutate(skill_level = case_when(REFYEAR < 2011 & str_extract(ISCO88_3D, '^\\d{1}') %in% c(1, 2, 3) ~ 'high',

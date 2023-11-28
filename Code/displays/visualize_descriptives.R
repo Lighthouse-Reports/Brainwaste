@@ -86,7 +86,7 @@ for(immigrant_var in immigrant_vars){
       ggtitle(paste0(dv, ' by ', immigrant_var, ', country, and year'))+
       labs(colour=immigrant_var)
     #save
-    ggsave(paste0(output_fp_country_comp, immigrant_var, '_', dv, '.png'), plot = last_plot())
+    ggsave(paste0(output_fp_country_comp, immigrant_var, '_', dv, '.png'), plot = last_plot(), width = 20, height = 20)
   }
 }
 
@@ -129,7 +129,7 @@ for(country in countries_to_analyze){
       
       #pivot to long
       cur_df_long <- cur_df %>%
-        select(-dplyr::ends_with('sd'))%>%
+        dplyr::select(-dplyr::ends_with('sd'))%>%
         pivot_longer(cols = dplyr::ends_with('mean'), names_to = 'dv_type', values_to = 'dv') %>%
         filter(dv_type %in% dvs_to_keep)
       
@@ -188,7 +188,8 @@ for(country in countries_to_analyze){
          
          #merge results df with map
          cur_df_long_map <- cur_df_long %>%
-           mutate(nuts = paste0(COUNTRY, as.character(REGION_2D))) %>%
+           mutate(nuts = case_when(nchar(as.character(REGION_2D)) == 1 ~ paste0(COUNTRY, '0', as.character(REGION_2D)),
+                                   .default = paste0(COUNTRY, as.character(REGION_2D)))) %>%
            left_join(cur_map, by = c('nuts' = 'NUTS_ID'))
          
          #loop over dependent variables: displaying all variables at once gets too confusing for maps

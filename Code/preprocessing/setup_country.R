@@ -35,13 +35,13 @@ for(country in countries_to_analyze){
   print(country)
   
   #get all file names for the current country
-  new_files_to_keep <- new_files[grepl(pattern = country, new_files)]
+  new_files_to_keep <- new_files[grepl(pattern = paste0(country, '[0-9]{4}'), new_files)]
   
   #read files for the current country
   df_list <- list()
   for(f in new_files_to_keep){
     temp_df <- read.csv(f) %>%
-      select(any_of(raw_vars))
+      dplyr::select(any_of(raw_vars))
     df_list <- append(df_list, list(temp_df))
   }
   #merge country dataframes
@@ -99,7 +99,7 @@ for(country in countries_to_analyze){
                                 !is.na(AHM2021_LANGCOUR) ~ AHM2021_LANGCOUR,
                                 .default = NA)
     ) %>%
-    select(all_of(vars_to_keep)) #keep variables defined in vars_to_keep
+    dplyr::select(all_of(vars_to_keep)) #keep variables defined in vars_to_keep
   
   #variables to keep that are missing
   print('Vars to keep missing')
