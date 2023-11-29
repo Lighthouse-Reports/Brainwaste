@@ -8,6 +8,7 @@ library(feather)
 library(tidyverse)
 library(openxlsx)
 library(stringr)
+library(arrow)
 
 #set up in and out fps
 input_fp <- 'Input Data/ELF_Merged/country_merged/merged_country_2006_onwards_'
@@ -23,7 +24,7 @@ for(country in countries_to_analyze){
   
   #load country df
   fp <- paste0(input_fp, country, '.feather')
-  country_df <- read_feather(fp)
+  country_df <- arrow::read_feather(fp)
   
   #make all empty strings NA
   country_df[country_df == ""] <- NA
@@ -117,8 +118,8 @@ for(country in countries_to_analyze){
   immigr_vec <- c('AFR_N', 'AFR_OTH', 'AME_S', 'ASI_E', 'ASI_NME', 'ASI_SSE', 'AME_C_CRB',
                   'AME_N', 'EFTA', 'EU15', 'EU27_2020', 'EUR_NEU27_2020_NEFTA', 'EUR_NEU28_NEFTA', 'NMS10', 'NMS3', 'OCE',
                   'UNKNOWN COUNTRY ABROAD')
-  country_df$is_immigrant <- case_when(country_df$COUNTRYB %in% immigr_vec ~ 1,
-                                       country_df$COUNTRYB == 'NAT' ~ 0,
+  country_df$is_immigrant <- case_when(country_df$COUNTRYB == 'NAT' ~ 0,
+                                       !is.na(country_df$COUNTRYB) ~ 1,
                                        .default = NA)
   country_df$is_second_gen <- case_when(country_df$COBFATH %in% immigr_vec | country_df$COBMOTH %in% immigr_vec ~ 1,
                                         country_df$COBFATH == 'NAT' | country_df$COBMOTH == 'NAT' ~ 0,
@@ -131,7 +132,7 @@ for(country in countries_to_analyze){
     mutate(years_in_country = case_when(YEARESID == 'Y0' ~ 0,
                                         YEARESID == 'Y1' ~ 1,
                                         YEARESID == 'Y2' ~ 2,
-                                        YEARESID == 'Y3' ~ 4,
+                                        YEARESID == 'Y3' ~ 3,
                                         YEARESID == 'Y4' ~ 4,
                                         YEARESID == 'Y5' ~ 5,
                                         YEARESID == 'Y6' ~ 6,
@@ -150,7 +151,7 @@ for(country in countries_to_analyze){
                                         YEARESID == 'Y55-59' ~ 57.5,
                                         YEARESID == 'Y60-64' ~ 62.5,
                                         YEARESID == 'Y65-69' ~ 67.5,
-                                        YEARESID == 'Y65-69' ~ 67.5,
+                                        YEARESID == 'Y70-74' ~ 72.5,
                                         .default = NA),
            yearesid_10_years = case_when(YEARESID %in% c('Y0', 'Y1', 'Y2', 'Y3', 'Y4', 'Y5', 'Y6', 'Y7', 'Y8', 'Y9') ~ 'Less than 10y',
                                          !is.na(YEARESID) ~ 'More than 10y',
@@ -221,9 +222,9 @@ for(country in countries_to_analyze){
   #skilled vs unskilled
   country_df <- country_df %>%
     mutate(skill_level = case_when(REFYEAR < 2011 & str_extract(ISCO88_3D, '^\\d{1}') %in% c(1, 2, 3) ~ 'high',
-                                   REFYEAR >= 2011 & str_extract(ISCO88_3D, '^\\d{1}') %in% c(1, 2, 3) ~ 'high',
+                                   REFYEAR >= 2011 & str_extract(ISCO08_3D, '^\\d{1}') %in% c(1, 2, 3) ~ 'high',
                                    REFYEAR < 2011 & str_extract(ISCO88_3D, '^\\d{1}') %in% c(4, 5, 6, 7, 8, 9) ~ 'low',
-                                   REFYEAR >= 2011 & str_extract(ISCO88_3D, '^\\d{1}') %in% c(4, 5, 6, 7, 8, 9) ~ 'low',
+                                   REFYEAR >= 2011 & str_extract(ISCO08_3D, '^\\d{1}') %in% c(4, 5, 6, 7, 8, 9) ~ 'low',
                                    .default = NA))
   
   #save

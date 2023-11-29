@@ -18,7 +18,7 @@ output_fp_viz <- paste0(output_fp, 'descriptives/')
 dir.create(output_fp_viz, showWarnings = F)
 
 #load config vectors
-var_path <- 'Input Data/Config/vars_visualize_descriptives.xlsx'
+var_path <- 'Input Data/Config/vars_visualize_descriptives_addons.xlsx'
 dependent_vars <- read.xlsx(var_path, sheet = 'dependent_vars')
 dvs_to_keep <- paste0(dependent_vars[dependent_vars$filter == 0,]$vars, '_mean')
 dependent_vars <- dependent_vars$vars
