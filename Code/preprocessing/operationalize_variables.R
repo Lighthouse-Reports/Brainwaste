@@ -41,6 +41,7 @@ for(country in countries_to_analyze){
     country_df[[col]] <- ifelse(country_df[[col]] %in% na_vars[[col]], NA, country_df[[col]])
   }
   
+  tcn_noanswer_countries <- c('BG', 'MT', 'PL', 'SI', 'NO', 'HR')
   #recode vars
   country_df <- country_df %>%
     mutate(COUNTRYW = ifelse(grepl("[0-9]{1,3}", COUNTRYW), NA, COUNTRYW),
@@ -48,7 +49,10 @@ for(country in countries_to_analyze){
            HATPAR = ifelse(grepl("9", HATPAR), NA, HATPAR),
            ESTQUAL = case_when(REFYEAR == 2008 & ESTQUAL == 9 ~ NA,
                                REFYEAR == 2021 & ESTQUAL == 99 ~ NA,
-                               .default = ESTQUAL))
+                               .default = ESTQUAL),
+           COUNTRYB = case_when(COUNTRY %in% tcn_noanswer_countries & COUNTRYB == 'NO ANSWER' ~ 'TCN',
+                                !(COUNTRY %in% tcn_noanswer_countries) & (COUNTRYB == 'NO ANSWER') ~ NA,
+                                .default = COUNTRYB))
   country_df <- country_df %>%
     mutate(YEARESID = ifelse(YEARESID %in% c("0", "1", "2", "3", "4", "5", "6", "7", "8", "9"), paste0('Y', YEARESID), YEARESID))
   
@@ -100,8 +104,8 @@ for(country in countries_to_analyze){
     mutate(hatage = AGE - REFYEAR - HATYEAR,
            hatage = ifelse(hatage > 30, NA, hatage),
            hat_isced = trunc(HATLEVEL / 100, digits = 0),
-           is_college_educated = case_when(hat_isced %in% c(6, 7, 8) ~ 1,
-                                           !is.na(hat_isced) ~ 0,
+           is_college_educated = case_when(REFYEAR > 2013 & hat_isced %in% c(6, 7, 8) ~ 1,
+                                           REFYEAR > 2013 & !is.na(hat_isced) ~ 0,
                                            .default = NA)) %>%
     mutate(overed_zscore_hat_isced = (hat_isced - mean(hat_isced, na.rm = T))/sd(hat_isced, na.rm = T),
            overed_zscore_hatage = (hatage - mean(hatage, na.rm = T))/sd(hatage, na.rm = T)) %>%
@@ -118,16 +122,17 @@ for(country in countries_to_analyze){
   immigr_vec <- c('AFR_N', 'AFR_OTH', 'AME_S', 'ASI_E', 'ASI_NME', 'ASI_SSE', 'AME_C_CRB',
                   'AME_N', 'EFTA', 'EU15', 'EU27_2020', 'EUR_NEU27_2020_NEFTA', 'EUR_NEU28_NEFTA', 'NMS10', 'NMS3', 'OCE',
                   'UNKNOWN COUNTRY ABROAD')
-  country_df$is_immigrant <- case_when(country_df$COUNTRYB == 'NAT' ~ 0,
-                                       !is.na(country_df$COUNTRYB) ~ 1,
-                                       .default = NA)
-  country_df$is_second_gen <- case_when(country_df$COBFATH %in% immigr_vec | country_df$COBMOTH %in% immigr_vec ~ 1,
-                                        country_df$COBFATH == 'NAT' | country_df$COBMOTH == 'NAT' ~ 0,
-                                        .default = NA)
-  country_df$is_global_south <- case_when(country_df$COUNTRYB %in% c('AFR_N', 'AFR_OTH', 'AME_S', 'ASI_E', 'ASI_NME', 'ASI_SSE', 'AME_C_CRB') ~ 'MIGR_GS',
-                                          country_df$COUNTRYB %in% c('AME_N', 'EFTA', 'EU15', 'EU27_2020', 'EUR_NEU27_2020_NEFTA', 'EUR_NEU28_NEFTA', 'NMS10', 'NMS3', 'OCE') ~ 'MIGR_GN',
-                                          country_df$COUNTRYB %in% c('NAT') ~ 'NAT',
-                                          .default = NA)
+  country_df <- country_df %>%
+    mutate(is_immigrant = case_when(COUNTRYB == 'NAT' ~ 0,
+                                     !is.na(COUNTRYB) ~ 1,
+                                     .default = NA),
+           is_second_gen = case_when(REFYEAR %in% c(2008,2009, 2014, 2021) & ((COBFATH != 'NAT' & !is.na(COBFATH)) | (COBMOTH != 'NAT' & !is.na(COBMOTH))) ~ 1,
+                                      REFYEAR %in% c(2008,2009, 2014, 2021) ~ 0,
+                                      .default = NA),
+           is_global_south = case_when(COUNTRYB %in% c('AFR_N', 'AFR_OTH', 'AME_S', 'ASI_E', 'ASI_NME', 'ASI_SSE', 'ASI_ESSE', 'AME_C_CRB', 'AME_LAT', 'AFR_N_ASI_NME', 'TCN') ~ 'MIGR_GS',
+                                        COUNTRYB %in% c('AME_N', 'EFTA', 'EU15', 'EU27_2020', 'EUR_NEU27_2020_NEFTA', 'EUR_NEU28_NEFTA', 'NMS10', 'NMS3', 'NMS13', 'OCE', 'EU28', 'EUR_NEU28', 'EU27_2020', 'EUR_NEU27_2020', 'AME_N_OCE') ~ 'MIGR_GN',
+                                        COUNTRYB %in% c('NAT') ~ 'NAT',
+                                        .default = NA))
   country_df <- country_df %>%
     mutate(years_in_country = case_when(YEARESID == 'Y0' ~ 0,
                                         YEARESID == 'Y1' ~ 1,

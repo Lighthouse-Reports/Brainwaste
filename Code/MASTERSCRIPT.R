@@ -1,14 +1,16 @@
 setwd("/Users/justin-casimirbraun/Brainwaste")
 
 #countries to analyze
-countries_to_analyze <- c('AT', 'BE', 'BG', 'CH',
+countries_to_analyze <- c('AT',
+                          'BE', 'BG', 'CH',
                           'CY', 'CZ', 'DK', 'EE',
                           'EL', 'ES', 'FI', 'FR',
                           'HR', 'HU', 'IE', 'IS', 
                           'IT', 'LT', 'LU', 'LV',
                           'MT', 'NL', 'NO', 'PL',
                           'PT', 'RO', 'SE', 'SI',
-                          'SK', 'UK')
+                          'SK', 'UK'
+                          )
 
 ### preprocessing ###
 source('Code/preprocessing/setup_country.R', local = T)

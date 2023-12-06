@@ -45,23 +45,20 @@ comparisons <- c('immigr', 'eu_native', 'noneu_native')
 #model types
 control_types <- c('basic_', 'controls_')
 
+
+#set up df to save all models
+mv_df <- data.frame(treat = character(),
+                    dv = character(),
+                    estimate = numeric(),
+                    lower_conf = numeric(),
+                    upper_conf = numeric(),
+                    p_value = numeric(),
+                    controls = character(),
+                    data_type = character(),
+                    significance = character(),
+                    country = character())
 #loop over countries
 for(country in countries_to_analyze){
-  #set up output fp and dir
-  output_fp_country <- paste0(output_fp, country, '/')
-  dir.create(output_fp_country, showWarnings = F)
-  
-  #set up df to save all models
-  mv_df <- data.frame(treat = character(),
-                      dv = character(),
-                      estimate = numeric(),
-                      lower_conf = numeric(),
-                      upper_conf = numeric(),
-                      p_value = numeric(),
-                      controls = character(),
-                      data_type = character(),
-                      significance = character())
-  
   #loop over dependent variables
   for(dv in dependent_vars){
     #loop over treatment variables
@@ -94,6 +91,7 @@ for(country in countries_to_analyze){
                           dv = dv,
                           controls = control,
                           data_type = comp,
+                          country = country,
                           significance = case_when(p_value < 0.01 ~ '***',
                                                    p_value < 0.05 ~ '**',
                                                    p_value < 0.1 ~ '*',
@@ -105,14 +103,45 @@ for(country in countries_to_analyze){
       }
     }
   }
+  
+}
+
+#country level plots
+for(cur_country in countries_to_analyze){
+  #set up output fp and dir
+  output_fp_country <- paste0(output_fp, cur_country, '/')
+  dir.create(output_fp_country, showWarnings = F)
+  
+  #subset by country
+  df_country <- mv_df %>%
+    filter(country == cur_country)
+  
   #plot country level graph
-  p <- ggplot(mv_df, aes(x = data_type, y = estimate, shape = controls, color = significance))+
+  p <- ggplot(df_country, aes(x = data_type, y = estimate, shape = controls, color = significance))+
     geom_point(size = 2)+
     geom_errorbar(aes(ymin = lower_conf, ymax = upper_conf), width = .2, color = '#A9A9A9')+
     ggh4x::facet_grid2(dv ~ treat, scales = 'free', independent = 'y')+
     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
     ggtitle(paste0(country, ': Impact of policy changes by comparison group, controls, and labor market outcomes'))
   ggsave(paste0(output_fp_country, 'overview.png'), plot=last_plot(), width = 8, height = 12)
+}
+
+#Country comp
+output_fp_country_comp <- paste0(output_fp, 'country_comp/')
+for(cur_treat in unique(mv_df$treat)){
+  for(cur_dv in unique(mv_df$dv)){
+    cur_df <- mv_df %>%
+      filter(treat == cur_treat, dv == cur_dv)
+    
+    #plot country level graph
+    p <- ggplot(cur_df, aes(x = data_type, y = estimate, shape = controls, color = significance))+
+      geom_point(size = 2)+
+      geom_errorbar(aes(ymin = lower_conf, ymax = upper_conf), width = .2, color = '#A9A9A9')+
+      facet_wrap(. ~ country)+
+      theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+      ggtitle(paste0('Impact of ', cur_treat, ' on ', cur_dv, 'by model and country'))
+    ggsave(paste0(output_fp_country_comp, cur_treat, '_', cur_dv, '.png'), plot=last_plot(), width = 20, height = 20)
+  }
 }
 
 ###Interaction effects###

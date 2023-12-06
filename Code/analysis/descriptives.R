@@ -14,7 +14,7 @@ output_fp <- 'Results/descriptives/'
 dir.create(output_fp, showWarnings = F)
 
 #load variable groups
-var_path <- 'Input Data/Config/vars_descriptives_addons.xlsx'
+var_path <- 'Input Data/Config/vars_descriptives.xlsx'
 
 #labor market outcome vars
 dependent_vars <- read.xlsx(var_path, sheet = 'dependent_vars')
