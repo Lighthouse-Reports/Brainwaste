@@ -12,7 +12,7 @@ library(speedglm)
 
 #set up input and output fps
 input_fp <- 'Input Data/ELF_Merged/final/merged_country_final_2006_onwards_'
-output_fp <- 'Results/h1/'
+output_fp <- paste0(cur_date, 'Results/h1/')
 dir.create(output_fp, showWarnings = F)
 
 #function to extract and set up variables from the config sheet

@@ -44,8 +44,7 @@ for(country in countries_to_analyze){
   tcn_noanswer_countries <- c('BG', 'MT', 'PL', 'SI', 'NO', 'HR')
   #recode vars
   country_df <- country_df %>%
-    mutate(COUNTRYW = ifelse(grepl("[0-9]{1,3}", COUNTRYW), NA, COUNTRYW),
-           AGECITI = ifelse(grepl("[0-9]{4}", AGECITI), NA, AGECITI),
+    mutate(AGECITI = ifelse(grepl("[0-9]{4}", AGECITI), NA, AGECITI),
            HATPAR = ifelse(grepl("9", HATPAR), NA, HATPAR),
            ESTQUAL = case_when(REFYEAR == 2008 & ESTQUAL == 9 ~ NA,
                                REFYEAR == 2021 & ESTQUAL == 99 ~ NA,
@@ -58,11 +57,11 @@ for(country in countries_to_analyze){
   
   #construct new variables
   country_df <- country_df %>%
-    mutate(receives_unemployment = ifelse(REGISTER %in% c(1, 3), 1, 0),
-           registered_at_unemp_agency = ifelse(REGISTER %in% c(1, 2), 1, 0),
+    mutate(#receives_unemployment = ifelse(REGISTER %in% c(1, 3), 1, 0),
+           #registered_at_unemp_agency = ifelse(REGISTER %in% c(1, 2), 1, 0),
            is_unemployed = ifelse(ILOSTAT == 2, 1, 0),
            is_partnered = ifelse(HHPARTNR == 1, 1, 0),
-           multiple_jobs = ifelse(NUMJOB > 1, 1, 0),
+           #multiple_jobs = ifelse(NUMJOB > 1, 1, 0),
            recognition = as.character(ESTQUAL),
            recognition = case_when(recognition == '1' ~ 'applied_completed',
                                    recognition == '2' & REFYEAR == 2008 ~ 'applied_ongoing_rejected',
@@ -86,15 +85,15 @@ for(country in countries_to_analyze){
            is_homework = case_when(HOMEWORK %in% c(1, 2) ~ 1,
                                 !is.na(HOMEWORK) ~ 0,
                                 .default = NA),
-           is_shift = case_when(SHIFTWK == 1 ~ 1,
-                             !is.na(SHIFTWK) ~ 0,
-                             .default = NA),
-           is_night = case_when(NIGHTWK %in% c(1, 2) ~ 1, 
-                             !is.na(NIGHTWK) ~ 0,
-                             .default = NA),
-           is_evening = case_when(EVENWK %in% c(1, 2) ~ 1,
-                                  !is.na(EVENWK) ~ 0,
-                                  .default = NA)
+           # is_shift = case_when(SHIFTWK == 1 ~ 1,
+           #                   !is.na(SHIFTWK) ~ 0,
+           #                   .default = NA),
+           # is_night = case_when(NIGHTWK %in% c(1, 2) ~ 1, 
+           #                   !is.na(NIGHTWK) ~ 0,
+           #                   .default = NA),
+           # is_evening = case_when(EVENWK %in% c(1, 2) ~ 1,
+           #                        !is.na(EVENWK) ~ 0,
+           #                        .default = NA)
            
     )
   
@@ -217,12 +216,11 @@ for(country in countries_to_analyze){
            treat_country = case_when(COUNTRY %in% c('ES', 'IT') & is_immigrant == 1 ~ 1,
                                      COUNTRY %in% c('ES', 'IT') & is_immigrant == 0 ~ 0,
                                      .default = NA),
-           treat_EU08_post = ifelse(REFYEAR > 2008, 1, 0),
-           treat_EU13_post = ifelse(REFYEAR > 2013, 1, 0),
-           treat_country_post = case_when(COUNTRY == 'ES' & REFYEAR > 2014 ~ 1,
-                                          COUNTRY == 'ES' & REFYEAR <= 2014 ~ 0,
-                                          COUNTRY == 'IT' & REFYEAR > 2009 ~ 1,
-                                          COUNTRY == 'IT' & REFYEAR <= 2009 ~ 0)
+           year_migrated = REFYEAR - years_in_country,
+           last_job_abroad = case_when(year_migrated >= YEARPR ~ 1,
+                                       .default = 0),
+           treat_EU08_automated = case_when(last_job_abroad == 1 & (ISCO08_3DPR %in% c(216, 226, 221, 222, 225) | ISCO88_3DPR %in% c(214, 222, 223)) ~ 1,
+                                            .default = 0)
     )
   #skilled vs unskilled
   country_df <- country_df %>%

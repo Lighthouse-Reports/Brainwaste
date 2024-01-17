@@ -8,8 +8,8 @@ library(feather)
 library(tidyverse)
 
 #set up output files
-dir.create('Results/Raw_Variable_Counts', showWarnings = F)
-dir.create('Results/Raw_Variable_Counts_Secure', showWarnings = F)
+dir.create(paste0(cur_date, 'Results/Raw_Variable_Counts'), showWarnings = F)
+dir.create(paste0(cur_date, 'Results/Raw_Variable_Counts_Secure'), showWarnings = F)
 
 #loop over countries
 for(country in countries_to_analyze){
@@ -42,13 +42,13 @@ for(country in countries_to_analyze){
       dplyr::select(-any_of(col_update))
     
     #save temp
-    write.csv(temp, paste0('Results/Raw_Variable_Counts/', col, '_', country, '.csv'))
+    write.csv(temp, paste0(cur_date, 'Results/Raw_Variable_Counts/', col, '_', country, '.csv'))
     
     #remove rows with fewer than 10 observations
     temp_sec <- temp %>%
       filter(n > 10)
     
     #save temp_sec
-    write.csv(temp_sec, paste0('Results/Raw_Variable_Counts_Secure/', col, '_', country, '.csv'))
+    write.csv(temp_sec, paste0(cur_date, 'Results/Raw_Variable_Counts_Secure/', col, '_', country, '.csv'))
   }
 }

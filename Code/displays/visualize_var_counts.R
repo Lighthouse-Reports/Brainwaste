@@ -6,11 +6,11 @@ library(data.table)
 library(feather)
 library(tidyverse)
 #set up output fp
-output_fp <- 'Results/visualize/var_counts/'
+output_fp <- paste0(cur_date, 'Results/visualize/var_counts/')
 dir.create(output_fp, showWarnings = F)
 
 #set up input fp
-input_fp <- 'Results/Raw_Variable_Counts/'
+input_fp <- paste0(cur_date, 'Results/Raw_Variable_Counts/')
 files <- list.files(input_fp, pattern = 'csv', full.names = T)
 
 #set up master_df

@@ -40,8 +40,8 @@ for(country in countries_to_analyze){
   #read files for the current country
   df_list <- list()
   for(f in new_files_to_keep){
-    temp_df <- read.csv(f) %>%
-      dplyr::select(any_of(raw_vars))
+    temp_df <- read.csv(f) #%>%
+      #dplyr::select(any_of(raw_vars))
     df_list <- append(df_list, list(temp_df))
   }
   #merge country dataframes

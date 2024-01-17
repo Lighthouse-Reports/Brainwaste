@@ -11,8 +11,8 @@ library(sf)
 library(wesanderson)
 
 #set up input and output fps, create dirs
-input_fp <- 'Results/descriptives/'
-output_fp <- 'Results/visualize/'
+input_fp <- paste0(cur_date, 'Results/descriptives/')
+output_fp <- paste0(cur_date, 'Results/visualize/')
 dir.create(output_fp, showWarnings = F)
 output_fp_viz <- paste0(output_fp, 'descriptives/')
 dir.create(output_fp_viz, showWarnings = F)
@@ -54,6 +54,42 @@ map <- bind_rows(map_2d, map_1d)
 #years to keep for maps
 years_to_keep_regional <- c(2008, 2012, 2016, 2021)
 
+pop <- read.csv('Input Data/eurostat/pop_transformed.csv') %>%
+  mutate(country_short = case_when(country_long == "Malta" ~ "MT",
+                            country_long == "Sweden" ~ "SE",
+                            country_long == "Norway" ~ "NO",
+                            country_long == "Austria" ~ "AT",
+                            country_long == "United Kingdom" ~ "UK",
+                            country_long == "Ireland" ~ "IE",
+                            country_long == "Luxembourg" ~ "LU",
+                            country_long == "Belgium" ~ "BE",
+                            country_long == "Romania" ~ "RO",
+                            country_long == "Portugal" ~ "PT",
+                            country_long == "Slovakia" ~ "SK",
+                            country_long == "Czechia" ~ "CZ",
+                            country_long == "Poland" ~ "PL",
+                            country_long == "Italy" ~ "IT",
+                            country_long == "France" ~ "FR",
+                            country_long == "Greece" ~ "EL",
+                            country_long == "Iceland" ~ "IS",
+                            country_long == "Croatia" ~ "HR",
+                            country_long == "Netherlands" ~ "NL",
+                            country_long == "Germany" ~ "DE",
+                            country_long == "Hungary" ~ "HU",
+                            country_long == "Bulgaria" ~ "BG",
+                            country_long == "Liechtenstein" ~ "LI",
+                            country_long == "Spain" ~ "ES",
+                            country_long == "Denmark" ~ "DK",
+                            country_long == "Switzerland" ~ "CH",
+                            country_long == "Slovenia" ~ "SI",
+                            country_long == "Finland" ~ "FI",
+                            country_long == "Latvia" ~ "LV",
+                            country_long == "Cyprus" ~ "CY",
+                            country_long == "Lithuania" ~ "LT",
+                            country_long == "Estonia" ~ "EE")) %>%
+  dplyr::select(country_short, year, total) %>%
+  rename(pop_total = total)
+
 ### Simple immigrant characteristic to dv comparisons by country
 #set up fp and dir
 output_fp_country_comp <- paste0(output_fp_viz, 'country_comp/')
@@ -71,8 +107,30 @@ for(immigrant_var in immigrant_vars){
   #get rid of NAs
   basic_all_countries <- basic_all_countries[!is.na(basic_all_countries[[immigrant_var]]),]
   
+  all_countries <- basic_all_countries %>%
+    dplyr::select(COUNTRY, REFYEAR) %>%
+    dplyr::distinct() %>%
+    dplyr::left_join(pop, by = c('COUNTRY' = 'country_short', 'REFYEAR' = 'year')) %>%
+    group_by(REFYEAR) %>%
+    mutate(pop_europe = sum(pop_total, na.rm = T)) %>%
+    ungroup() %>%
+    mutate(pop_share = pop_total/pop_europe)
+  
+  basic_all_countries <- basic_all_countries %>%
+    left_join(all_countries, by = c('COUNTRY', 'REFYEAR'))
+  
+  europe_figures <- basic_all_countries %>%
+    mutate(across(ends_with('mean'), ~ .* pop_share))%>%
+    group_by_at(.vars =c('REFYEAR', immigrant_var)) %>%
+    summarise(across(ends_with('mean'), sum, na.rm = T)) %>%
+    mutate(COUNTRY = 'EU')
+  
+  basic_all_countries <- basic_all_countries %>%
+    bind_rows(europe_figures)
+  
   #loop over dependent variables
   for(dv in dependent_vars){
+    print(dv)
     #get variable names
     dv_mean <- paste0(dv, '_mean')
     dv_sd <- paste0(dv, '_sd')

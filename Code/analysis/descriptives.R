@@ -10,7 +10,7 @@ library(ggplot2)
 
 #set up fps
 input_fp <- 'Input Data/ELF_Merged/final/merged_country_final_2006_onwards_'
-output_fp <- 'Results/descriptives/'
+output_fp <- paste0(cur_date, 'Results/descriptives/')
 dir.create(output_fp, showWarnings = F)
 
 #load variable groups

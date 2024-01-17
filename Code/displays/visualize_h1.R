@@ -14,8 +14,8 @@ library(ggh4x)
 library(rex)
 
 #set up fps and dir
-input_fp <- 'Results/h1'
-output_fp <- 'Results/visualize/h1/'
+input_fp <- paste0(cur_date, 'Results/h1')
+output_fp <- paste0(cur_date, 'Results/visualize/h1/')
 dir.create(output_fp, showWarnings = F)
 
 #function to extract and set up variables from the config sheet

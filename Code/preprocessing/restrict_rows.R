@@ -3,7 +3,7 @@ library(dplyr)
 library(tidyr)
 library(readr)
 library(data.table)
-library(feather)
+library(arrow)
 library(tidyverse)
 library(openxlsx)
 library(stringr)
@@ -17,7 +17,7 @@ dir.create(output_fp, showWarnings = F)
 for(country in countries_to_analyze){
   print(country)
   #load country level ELF
-  country_df <- read_feather(paste0(input_fp, country, '.feather'))
+  country_df <- arrow::read_feather(paste0(input_fp, country, '.feather'))
   
   #print dimensions of country df
   print(dim(country_df))
