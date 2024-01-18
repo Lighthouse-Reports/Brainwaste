@@ -97,7 +97,7 @@ pop_clean <- pop %>%
                                    country_long == "Lithuania" ~ "LT",
                                    country_long == "Estonia" ~ "EE"))
 
-#TODO: country groups
+# country groups
 country_group_dic <- hash()
 country_group_dic[['Baltics']] <- c('LV', 'LT', 'EE')
 country_group_dic[['Visegrad']] <- c('PL', 'CZ', 'SK', 'HU')
@@ -201,6 +201,29 @@ employed_immigrants <- read_excel('Input Data/eurostat/employed_immigrants_raw.x
                                    country_long == "Estonia" ~ "EE"),
          count = as.numeric(count_thousands)*1000) %>%
   filter(!is.na(country_short))
+
+# country groups
+country_group_dic <- hash()
+country_group_dic[['Baltics']] <- c('LV', 'LT', 'EE')
+country_group_dic[['Visegrad']] <- c('PL', 'CZ', 'SK', 'HU')
+country_group_dic[['eu07']] <- c('RO', 'BG')
+country_group_dic[['yugo']] <- c('SI', 'HR')
+
+for(cur_key in keys(country_group_dic)){
+  cur_countries <- country_group_dic[[cur_key]]
+  
+  print(cur_key)
+  print(cur_countries)
+  
+  employed_cur <- employed_immigrants %>%
+    filter(country_short %in% cur_countries) %>%
+    summarise(count = sum(count, na.rm = T)) %>%
+    mutate(country_long = cur_key,
+           country_short = cur_key)
+  employed_immigrants <- employed_immigrants %>%
+    bind_rows(employed_cur)
+}
+
 
 write.csv(employed_immigrants, 'Input Data/eurostat/employed_immigrants_transformed.csv')  
 

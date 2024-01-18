@@ -77,11 +77,11 @@ for(cur_key in keys(country_group_dic)){
       dplyr::mutate(COUNTRY_old = COUNTRY, #include COUNTRY_old var
                     COUNTRY = cur_key)
     
-    df_list <- append(df_list, list(cur_df))
+    new_df_list <- append(new_df_list, list(cur_df))
   }
   
   #merge all data again
-  combined_df_new <- rbindlist(df_list, use.names = TRUE, fill = TRUE) 
+  combined_df_new <- rbindlist(new_df_list, use.names = TRUE, fill = TRUE) 
   
   #save data
   arrow::write_feather(combined_df_new, paste0(input_fp, 'merged_country_external_2006_onwards_', cur_key, '.feather'))

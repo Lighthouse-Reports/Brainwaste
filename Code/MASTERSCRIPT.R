@@ -1,16 +1,14 @@
 setwd("/Users/justin-casimirbraun/Brainwaste")
 
 #countries to analyze
-countries_to_analyze <- c('AT', 'BE',
-                          'BG', 'CH',
-                          'CY', 'CZ', 'DK', 'EE',
-                          'EL', 'ES', 'FI', 'FR',
-                          'HR', 'HU', 'IE', 'IS',
-                          'IT', 'LT', 'LU', 'LV',
-                          'MT', 'NL', 'NO', 'PL',
-                          'PT', 'RO', 'SE', 'SI',
-                          'SK', 'UK'
+countries_to_analyze <- c('AT', 'BE', 'CH','CY', 'DK', 
+                          'EL', 'ES', 'FI', 'FR', 'IE', 
+                          'IS', 'IT', 'LU', 'MT', 'NL', 
+                          'NO', 'PT', 'SE', 'UK',
+                          #'EE', 'LT', 'LV', 'PL', 'CZ', 'BG',  'HR', 'HU', 'RO','SI', 'SK', 
+                          'Baltics', 'eu07', 'Visegrad', 'yugo'
                           )
+
 #set date
 cur_date <- '230114_'
 

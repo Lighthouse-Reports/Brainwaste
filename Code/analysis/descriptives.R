@@ -2,7 +2,7 @@
 library(dplyr)
 library(tidyr)
 library(readr)
-library(feather)
+library(arrow)
 library(openxlsx)
 library(stringr)
 library(ggplot2)
@@ -46,7 +46,7 @@ for(country in countries_to_analyze){
   print(country)
   
   #load country df
-  country_df <- read_feather(paste0(input_fp, country, '.feather'))
+  country_df <- arrow::read_feather(paste0(input_fp, country, '.feather'))
   gc() #clean memory
   
   #set up country specific output fp

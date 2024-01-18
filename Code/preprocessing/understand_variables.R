@@ -4,7 +4,7 @@ library(ggplot2)
 library(tidyr)
 library(readr)
 library(data.table)
-library(feather)
+library(arrow)
 library(tidyverse)
 
 #set up output files
@@ -16,7 +16,7 @@ for(country in countries_to_analyze){
   print(country)
   #define input fp
   fp <- paste0('Input Data/ELF_Merged/final/merged_country_final_2006_onwards_', country, '.feather')
-  country_df <- read_feather(fp)
+  country_df <- arrow::read_feather(fp)
   
   #get list of variable names
   col_names_country_df <- colnames(country_df)

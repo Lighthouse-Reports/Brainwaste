@@ -91,7 +91,11 @@ for(country in countries_to_analyze){
             #   fit_fp <- fit_fp_list[1]
             # }
             #load model file
-            fit_df <- read.csv(fit_fp)
+            fit_df <- try(read.csv(fit_fp))
+            if(is(fit_df, 'try-error')) {
+              print(paste0(fit_fp, ': File read failed'))
+              next
+            }
             
             #only keep relevant rows (interaction of REFYEAR and treatment) and format columns
             fit_df_relevant <- fit_df %>%
@@ -136,11 +140,11 @@ for(cur_treat in unique(mv_df$treat)){
       geom_point(size = 2)+
       geom_errorbar(aes(ymin = lower_conf, ymax = upper_conf), width = .2, color = '#A9A9A9')+
       geom_vline(xintercept = year_implemented, color = 'red', alpha = 0.3)+
-      facet_grid(country ~ data_type)+
+      facet_grid(country ~ data_type, scales = 'free_y')+
       theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
       ggtitle(paste0('Impact of ', cur_treat, ' on ', cur_dv, ' by model and country'))
     
-    print(p)
+    #print(p)
     ggsave(paste0(output_fp_country_comp, cur_treat, '_', cur_dv, '.png'), plot=last_plot(), width = 20, height = 30)
   }
 }

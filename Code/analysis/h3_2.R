@@ -33,6 +33,7 @@ master_df <- data.frame(country = character(),
                         )
 
 for(country in countries_to_analyze){
+  print(country)
   country_df <- arrow::read_feather(paste0(input_fp, country, '.feather'))
   
   country_df <- country_df %>%
@@ -42,16 +43,33 @@ for(country in countries_to_analyze){
   native_df <- country_df %>%
     filter(REFYEAR == 2019, is_immigrant == 0)
   
-  wage_fit_basic <- lm(data = native_df, income_euro ~ age_years + age_years^2 + SEX + HHNBCHILD + is_partnered + hat_isced + as.factor(REGION_2D))
-  wage_fit_educ <- lm(data = native_df, income_euro ~ age_years + age_years^2 + SEX + HHNBCHILD + is_partnered + hat_isced + as.factor(hatfield1d) + as.factor(REGION_2D))
-  wage_fit_uemp <- lm(data = native_df, income_euro ~ age_years + age_years^2 + SEX + HHNBCHILD + is_partnered + hat_isced + uemp + as.factor(REGION_2D))
-  wage_fit_overed <- lm(data = native_df, income_euro ~ age_years + age_years^2 + SEX + HHNBCHILD + is_partnered + hat_isced + overed_1sd_hat_isced + as.factor(REGION_2D))
+  fr <- 'income_euro ~'
+  if(nrow(unique(native_df[,'income_euro']))<=1) next
+  if(nrow(unique(native_df[,'age_years']))>1) fr <-paste0(fr, 'age_years + age_years^2')
+  if(nrow(unique(native_df[,'SEX']))>1) fr <-paste0(fr, '+ SEX')
+  if(nrow(unique(native_df[,'HHNBCHILD']))>1) fr <-paste0(fr, '+ HHNBCHILD')
+  if(nrow(unique(native_df[,'is_partnered']))>1) fr <-paste0(fr, '+ is_partnered')
+  if(nrow(unique(native_df[,'hat_isced']))>1) fr <-paste0(fr, '+ hat_isced')
+  if(nrow(unique(native_df[,'REGION_2D']))>1) fr <-paste0(fr, '+ as.factor(REGION_2D)')
+  
+  wage_fit_basic <- try(lm(data = native_df, formula = fr))
+  if(is(wage_fit_basic, 'try-error')) print('Wage fit basic failed')
+  wage_fit_educ <- try(lm(data = native_df, formula = paste0(fr, '+ hatfield1d')))
+  if(is(wage_fit_educ, 'try-error')) print('Wage fit educ failed')
+  wage_fit_uemp <- try(lm(data = native_df, formula = paste0(fr, '+ uemp')))
+  if(is(wage_fit_uemp, 'try-error')) print('Wage fit uemp failed')
+  wage_fit_overed <- try(lm(data = native_df, formula = paste0(fr, '+ overed_1sd_hat_isced')))
+  if(is(wage_fit_overed, 'try-error')) print('Wage fit overed failed')
   
   immigrant_df <- country_df %>%
     filter(REFYEAR == 2019, is_immigrant == 1)
   
-  immigrant_df$predicted_earnings_basic <- predict(wage_fit_basic, newdata = immigrant_df)
-  immigrant_df$predicted_earnings_educ <- predict(wage_fit_educ, newdata = immigrant_df)
+  predicted_earnings_basic <- try(predict(wage_fit_basic, newdata = immigrant_df))
+  if(is(predicted_earnings_basic, 'try-error')) next
+  immigrant_df$predicted_earnings_basic <- predicted_earnings_basic
+  predicted_earnings_educ <- try(predict(wage_fit_educ, newdata = immigrant_df))
+  if(is(predicted_earnings_educ, 'try-error')) next
+  immigrant_df$predicted_earnings_educ <- predicted_earnings_educ
   
   immigrant_df <- immigrant_df %>%
     mutate(wage_diff_basic = predicted_earnings_basic - income_euro,
@@ -101,7 +119,8 @@ master_df_long <- master_df %>%
 
 ggplot(master_df_long, aes(x = potential_type, y = euro))+
   geom_bar(stat = 'identity', position = 'dodge')+
-  facet_wrap(.~country)+
-  scale_y_continuous(labels = unit_format(unit = "M", scale = 1e-6))
+  facet_wrap(.~country, scales = 'free_y')+
+  scale_y_continuous(labels = unit_format(unit = "M", scale = 1e-6))+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
 ggsave(paste0(output_fp, 'earnings_potential_immigrants.png'), plot = last_plot(), width = 15, height = 20)

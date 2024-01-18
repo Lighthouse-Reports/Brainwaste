@@ -149,7 +149,7 @@ for(immigrant_var in immigrant_vars){
 }
 
 ### within country comparisons ###
-for(country in countries_to_analyze){
+for(country in  countries_to_analyze){
   print(country)
   
   #set up output fp and dir
@@ -236,6 +236,7 @@ for(country in countries_to_analyze){
       
       #map graphs
       }else if(cur_plot_type == 'map'){
+        if(country %in% c('Baltics', 'eu07', 'Visegrad', 'yugo')) next
         #prepare output fp and dir
         output_fp_region <- paste0(output_fp_immigr, 'region/')
         dir.create(output_fp_region, showWarnings = F)
