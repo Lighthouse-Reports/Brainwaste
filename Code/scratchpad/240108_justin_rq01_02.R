@@ -31,7 +31,7 @@ pop_combined <- dplyr::left_join(pop_immigr, pop_total, by = c('geo', 'year')) %
          share_immigrants = immigrants/total) %>%
   filter(!geo %in% c('Montenegro', 'North Macedonia'))
 
-outpath <- 'Results/scratchpad/rq01_02/'
+outpath <- paste0(cur_date, 'Results/scratchpad/rq01_02/')
 dir.create(outpath, showWarnings = F)
 write.csv(pop_combined, paste0(outpath, 'year_country_immigr_flows.csv'))
 

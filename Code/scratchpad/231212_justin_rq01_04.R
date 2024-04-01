@@ -17,18 +17,7 @@ library(tidytext)
 
 setwd("/Users/justin-casimirbraun/Brainwaste")
 
-countries_to_analyze <- c('AT',
-                          'BE', 'BG', 'CH',
-                          'CY', 'CZ', 'DK', 'EE',
-                          'EL', 'ES', 'FI', 'FR',
-                          'HR', 'HU', 'IE', 'IS', 
-                          'IT', 'LT', 'LU', 'LV',
-                          'MT', 'NL', 'NO', 'PL',
-                          'PT', 'RO', 'SE', 'SI',
-                          'SK', 'UK'
-)
-
-input_fp <- 'Results/descriptives/'
+input_fp <- paste0(cur_date, 'Results/descriptives/')
 master_df <- data.frame()
 for(country in countries_to_analyze){
   cur_df <- read.csv(paste0(input_fp, country, '/is_immigrant/hatfield1d.csv')) %>%
@@ -54,15 +43,15 @@ master_df <- master_df %>%
                                           hatfield1d == 10 ~ 'services',
                                           .default = 'Unknown Field'))
 
-ggplot(master_df, aes(x = hatfield_text, y = share, fill = as.factor(is_immigrant)))+
+p <- ggplot(master_df, aes(x = hatfield_text, y = share, fill = as.factor(is_immigrant)))+
   geom_bar(position = 'dodge', stat = 'identity')+
   facet_grid(COUNTRY ~ REFYEAR)+
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
-dir.create('Results/scratchpad/rq01_04/', showWarnings = F)
-ggsave('Results/scratchpad/rq01_04/hatfield_country_year.png', plot = last_plot(), height = 25, width = 20)
+dir.create(paste0(cur_date, 'Results/scratchpad/rq01_04/'), showWarnings = F)
+ggsave(paste0(cur_date, 'Results/scratchpad/rq01_04/hatfield_country_year.png'), plot = p, height = 25, width = 20)
 
-write.xlsx(master_df, 'Results/scratchpad/rq01_04/hatfield_country_year.xlsx')
+write.xlsx(master_df, paste0(cur_date, 'Results/scratchpad/rq01_04/hatfield_country_year.xlsx'), overwrite = T)
 
 master_df_wide <- master_df %>%
   pivot_wider(id_cols = c('COUNTRY', 'REFYEAR', 'hatfield1d', 'hatfield_text'),
@@ -74,7 +63,7 @@ master_df_wide <- master_df %>%
   dplyr::mutate(share_diff = share_immigrant - share_native,
                 share_ratio = share_immigrant/share_native)
 
-write.xlsx(master_df_wide, 'Results/scratchpad/rq01_04/hatfield_country_year_wide.xlsx', overwrite = T)
+write.xlsx(master_df_wide, paste0(cur_date, 'Results/scratchpad/rq01_04/hatfield_country_year_wide.xlsx'), overwrite = T)
 
 for(yr in unique(master_df_wide$REFYEAR)){
   cur_df <- master_df_wide %>%
@@ -87,7 +76,7 @@ for(yr in unique(master_df_wide$REFYEAR)){
          y = 'Immigrant share - native share',
          label = 'Immigrant N > 100',
          title = paste0('Difference in Field of Education (immigrant share - native share) by Country: ', as.character(yr)))
-  ggsave(paste0('Results/scratchpad/rq01_04/hatfield_country_share_difff_', as.character(yr), '.png'), 
-         plot = last_plot(), height = 29, width = 21)
+  ggsave(paste0(cur_date, 'Results/scratchpad/rq01_04/hatfield_country_share_difff_', as.character(yr), '.png'), 
+         plot = p, height = 29, width = 21)
 }
 

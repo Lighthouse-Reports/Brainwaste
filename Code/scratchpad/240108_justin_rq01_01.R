@@ -37,7 +37,7 @@ eu_shares <- pop_combined %>%
 pop_combined <- pop_combined %>%
   bind_rows(eu_shares)
 
-outpath <- 'Results/scratchpad/rq01_01/'
+outpath <- paste0(cur_date, 'Results/scratchpad/rq01_01/')
 dir.create(outpath, showWarnings = F)
 write.csv(pop_combined, paste0(outpath, 'year_country_immigr_total.csv'))
 

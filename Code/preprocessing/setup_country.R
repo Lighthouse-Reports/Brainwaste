@@ -9,14 +9,16 @@ library(tidyverse)
 library(openxlsx)
 
 #define input fp
-input_data_path = 'Input Data/231106_ELF_Raw/'
+input_data_path = 'Input Data/240313_ELF_Raw/'
 
 #get fps for all raw data files
-old_files <- list.files(path=paste0(input_data_path, "YEAR_1983_2005/"), pattern = 'csv', recursive = TRUE) 
-old_files <-paste0(input_data_path, "YEAR_1983_2005/", old_files)
-new_files <- list.files(path=paste0(input_data_path, "YEAR_2006_2021/"), pattern = 'csv', recursive = TRUE)
-new_files <-paste0(input_data_path, "YEAR_2006_2021/", new_files)
-all_files <- union(old_files, new_files)
+# old_files <- list.files(path=paste0(input_data_path, "YEAR_1983_2005/"), pattern = 'csv', recursive = TRUE) 
+# old_files <-paste0(input_data_path, "YEAR_1983_2005/", old_files)
+new_files <- list.files(path=paste0(input_data_path), pattern = 'csv', recursive = TRUE)
+new_files <-paste0(input_data_path, new_files)
+years_to_keep <- as.character(c(2006:2022))
+new_files <- new_files[grepl(pattern = paste(years_to_keep, collapse = '|'), new_files)]
+#all_files <- union(old_files, new_files)
 
 #define output fp
 country_fp <- 'Input Data/ELF_Merged/country_merged'
@@ -107,9 +109,10 @@ for(country in countries_to_analyze){
   
   #save country level data frame
   write_feather(merged_df_country, paste0(country_fp, '/merged_country_2006_onwards_', country, '.feather'))
-  remove(merged_df_country)
-  remove(df_list)
-  remove(temp_df)
+  
+  rm(merged_df_country)
+  rm(df_list)
   gc()
+  
 }
 

@@ -102,11 +102,13 @@ for(country in countries_to_analyze){
     group_by(REFYEAR, ISCO88_3D, ISCO08_3D) %>%
     mutate(hatage = AGE - REFYEAR - HATYEAR,
            hatage = ifelse(hatage > 30, NA, hatage),
-           hat_isced = trunc(HATLEVEL / 100, digits = 0),
-           is_college_educated = case_when(REFYEAR > 2013 & hat_isced %in% c(6, 7, 8) ~ 1,
-                                           REFYEAR > 2013 & !is.na(hat_isced) ~ 0,
+           hat_isced = case_when(!is.na(HATLEVEL) ~ trunc(HATLEVEL / 100, digits = 0),
+                                 .default = NA),
+           is_college_educated = case_when(hat_isced %in% c(5, 6, 7, 8, 9) ~ 1,
+                                           !is.na(hat_isced) ~ 0,
                                            .default = NA)) %>%
-    mutate(overed_zscore_hat_isced = (hat_isced - mean(hat_isced, na.rm = T))/sd(hat_isced, na.rm = T),
+    mutate(overed_zscore_hat_isced = case_when(REFYEAR > 2013 ~ (hat_isced - mean(hat_isced, na.rm = T))/sd(hat_isced, na.rm = T),
+                                               .default = NA),
            overed_zscore_hatage = (hatage - mean(hatage, na.rm = T))/sd(hatage, na.rm = T)) %>%
     ungroup() %>%
     mutate(overed_zscore_hat_isced = ifelse(is.na(ISCO88_3D) & is.na(ISCO08_3D), NA, overed_zscore_hat_isced),
@@ -195,7 +197,18 @@ for(country in countries_to_analyze){
                                        .default = NA),
            previous_job_abroad = case_when((REFYEAR - years_in_country) >= YEARPR ~ 1,
                                            (REFYEAR - years_in_country) < YEARPR ~ 0,
-                                           .default = NA))
+                                           .default = NA),
+           job_through_employment_agency = case_when(WAYJFOUN == 1 ~ 1,
+                                                     WAYJFOUN == 2 ~ 0,
+                                                     .default = NA),
+           works_abroad = case_when(COUNTRYW == country ~ 0,
+                                    !is.na(COUNTRYW) ~ 1,
+                                    .default = NA),
+           works_abroad_immigrant = case_when(works_abroad == 1 & is_immigrant == 1 ~ 'immigrant_works_abroad',
+                                              works_abroad == 1 & is_immigrant == 0 ~ 'native_works_abroad',
+                                              works_abroad == 0 & is_immigrant == 0 ~ 'native_works_domestic',
+                                              works_abroad == 0 & is_immigrant == 1 ~ 'immigrant_works_domestic',
+                                              .default = NA))
   
   #construct treatment
  
@@ -228,7 +241,10 @@ for(country in countries_to_analyze){
                                    REFYEAR >= 2011 & str_extract(ISCO08_3D, '^\\d{1}') %in% c(1, 2, 3) ~ 'high',
                                    REFYEAR < 2011 & str_extract(ISCO88_3D, '^\\d{1}') %in% c(4, 5, 6, 7, 8, 9) ~ 'low',
                                    REFYEAR >= 2011 & str_extract(ISCO08_3D, '^\\d{1}') %in% c(4, 5, 6, 7, 8, 9) ~ 'low',
-                                   .default = NA))
+                                   .default = NA),
+           has_skilled_occupation = case_when(skill_level == 'high' ~ 1,
+                                              skill_level == 'low' ~ 0,
+                                              .default = NA))
   
   #save
   write_feather(country_df, paste0(result_fp, 'merged_country_op_2006_onwards_', country, '.feather'))

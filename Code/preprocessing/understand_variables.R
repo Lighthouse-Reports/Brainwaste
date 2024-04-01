@@ -8,6 +8,7 @@ library(arrow)
 library(tidyverse)
 
 #set up output files
+dir.create(paste0(cur_date, 'Results/'))
 dir.create(paste0(cur_date, 'Results/Raw_Variable_Counts'), showWarnings = F)
 dir.create(paste0(cur_date, 'Results/Raw_Variable_Counts_Secure'), showWarnings = F)
 

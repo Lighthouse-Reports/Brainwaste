@@ -227,4 +227,140 @@ for(cur_key in keys(country_group_dic)){
 
 write.csv(employed_immigrants, 'Input Data/eurostat/employed_immigrants_transformed.csv')  
 
-         
+
+gdp <- read_excel('Input Data/eurostat/gdp_raw.xlsx', sheet = 3, skip = 9) %>%
+  rename(country_long = 'GEO (Labels)',
+         gdp_mil = '...2') %>%
+  dplyr::select(-'...3') %>%
+  mutate(country_short = case_when(country_long == "Malta" ~ "MT",
+                                   country_long == "Sweden" ~ "SE",
+                                   country_long == "Norway" ~ "NO",
+                                   country_long == "Austria" ~ "AT",
+                                   country_long == "United Kingdom" ~ "UK",
+                                   country_long == "Ireland" ~ "IE",
+                                   country_long == "Luxembourg" ~ "LU",
+                                   country_long == "Belgium" ~ "BE",
+                                   country_long == "Romania" ~ "RO",
+                                   country_long == "Portugal" ~ "PT",
+                                   country_long == "Slovakia" ~ "SK",
+                                   country_long == "Czechia" ~ "CZ",
+                                   country_long == "Poland" ~ "PL",
+                                   country_long == "Italy" ~ "IT",
+                                   country_long == "France" ~ "FR",
+                                   country_long == "Greece" ~ "EL",
+                                   country_long == "Iceland" ~ "IS",
+                                   country_long == "Croatia" ~ "HR",
+                                   country_long == "Netherlands" ~ "NL",
+                                   country_long == "Germany" ~ "DE",
+                                   country_long == "Hungary" ~ "HU",
+                                   country_long == "Bulgaria" ~ "BG",
+                                   country_long == "Liechtenstein" ~ "LI",
+                                   country_long == "Spain" ~ "ES",
+                                   country_long == "Denmark" ~ "DK",
+                                   country_long == "Switzerland" ~ "CH",
+                                   country_long == "Slovenia" ~ "SI",
+                                   country_long == "Finland" ~ "FI",
+                                   country_long == "Latvia" ~ "LV",
+                                   country_long == "Cyprus" ~ "CY",
+                                   country_long == "Lithuania" ~ "LT",
+                                   country_long == "Estonia" ~ "EE"),
+         gdp = as.numeric(gdp_mil)*1000000) %>%
+  filter(!is.na(country_short))
+
+for(cur_key in keys(country_group_dic)){
+  cur_countries <- country_group_dic[[cur_key]]
+  
+  print(cur_key)
+  print(cur_countries)
+  
+  gdp_cur <- gdp %>%
+    filter(country_short %in% cur_countries) %>%
+    summarise(gdp = sum(gdp, na.rm = T)) %>%
+    mutate(country_long = cur_key,
+           country_short = cur_key)
+  gdp <- gdp %>%
+    bind_rows(gdp_cur)
+}
+
+write.csv(gdp, 'Input Data/eurostat/gdp_transformed.csv')
+
+annual <- c('D1...3', 'D2...4', 'D3...5', 'D4...6', 'D5...7',
+            'D6...8', 'D7...9', 'D8...10', 'D9...11')
+monthly <- c('D1...12', 'D2...13', 'D3...14', 'D4...15', 'D5...16',
+             'D6...17', 'D7...18', 'D8...19', 'D9...20')
+hourly <- c('D1...21', 'D2...22', 'D3...23', 'D4...24', 'D5...25',
+            'D6...26', 'D7...27', 'D8...28', 'D9...29')
+ses_raw_2010 <- read_excel('Input Data/eurostat/ses_raw.xlsx', sheet = '2010', skip = 1)
+ses_raw_2010_annual <- ses_raw_2010 %>%
+  dplyr::select(YEAR, COUNTRY, all_of(annual))
+ses_raw_2010_monthly <- ses_raw_2010 %>%
+  dplyr::select(YEAR, COUNTRY, all_of(monthly))
+ses_raw_2010_hourly <- ses_raw_2010 %>%
+  dplyr::select(YEAR, COUNTRY, all_of(hourly))
+
+ses_raw_2014 <- read_excel('Input Data/eurostat/ses_raw.xlsx', sheet = '2014', skip = 1)
+ses_raw_2014_annual <- ses_raw_2014 %>%
+  dplyr::select(YEAR, COUNTRY, all_of(annual))
+ses_raw_2014_monthly <- ses_raw_2014 %>%
+  dplyr::select(YEAR, COUNTRY, all_of(monthly))
+ses_raw_2014_hourly <- ses_raw_2014 %>%
+  dplyr::select(YEAR, COUNTRY, all_of(hourly))
+
+ses_raw_2018 <- read_excel('Input Data/eurostat/ses_raw.xlsx', sheet = '2018', skip = 1)
+ses_raw_2018_annual <- ses_raw_2018 %>%
+  dplyr::select(YEAR, COUNTRY, all_of(annual))
+ses_raw_2018_monthly <- ses_raw_2018 %>%
+  dplyr::select(YEAR, COUNTRY, all_of(monthly))
+ses_raw_2018_hourly <- ses_raw_2018 %>%
+  dplyr::select(YEAR, COUNTRY, all_of(hourly))
+
+ses_raw_annual_comb <- dplyr::bind_rows(ses_raw_2010_annual, ses_raw_2014_annual, ses_raw_2018_annual) %>%
+  pivot_longer(cols = starts_with('D'), names_to = 'Decile', names_prefix = 'D', values_to = 'wages_annual')
+ses_raw_monthly_comb <- dplyr::bind_rows(ses_raw_2010_monthly, ses_raw_2014_monthly, ses_raw_2018_monthly) %>%
+  pivot_longer(cols = starts_with('D'), names_to = 'Decile', names_prefix = 'D', values_to = 'wages_monthly')
+ses_raw_hourly_comb <- dplyr::bind_rows(ses_raw_2010_hourly, ses_raw_2014_hourly, ses_raw_2018_hourly) %>%
+  pivot_longer(cols = starts_with('D'), names_to = 'Decile', names_prefix = 'D', values_to = 'wages_hourly')
+
+#combine dataframes into single df
+ses_raw_comb <- ses_raw_annual_comb %>%
+  left_join(ses_raw_monthly_comb, by = c('YEAR', 'COUNTRY', 'Decile')) %>%
+  left_join(ses_raw_hourly_comb, by = c('YEAR', 'COUNTRY', 'Decile'))
+
+#interpolate linerally between observations 
+df_interpolated <- data.frame()
+years_to_inter <- with(ses_raw_comb, ceiling(min(YEAR)):floor(max(YEAR)))
+
+for(cur_country in unique(ses_raw_comb$COUNTRY)){
+  for(cur_decile in unique(ses_raw_comb$Decile)){
+    df_cur <- ses_raw_comb %>%
+      filter(COUNTRY == cur_country, Decile == cur_decile)
+    if(nrow(df_cur) < 2) next
+    
+    df_new <- data.frame(YEAR = years_to_inter, COUNTRY = cur_country, Decile = cur_decile,
+                         wages_annual = approx(df_cur$YEAR, df_cur$wages_annual, xout = years_to_inter, method = 'linear')$y,
+                         wages_monthly = approx(df_cur$YEAR, df_cur$wages_monthly, xout = years_to_inter, method = 'linear')$y,
+                         wages_hourly = approx(df_cur$YEAR, df_cur$wages_hourly, xout = years_to_inter, method = 'linear')$y)
+    #add observations for 2019-21
+    df_new <- df_new %>%
+      filter(YEAR == 2018) %>%
+      slice(rep(1:n(), each = 3)) %>%
+      mutate(YEAR = 2019:2021) %>%
+      bind_rows(df_new)
+    
+    df_interpolated <- df_interpolated %>%
+      bind_rows(df_new)
+  }
+}
+
+df_interpolated <- df_interpolated %>%
+  mutate(Quintile = case_when(Decile == 1 ~ 1,
+                              Decile == 3 ~ 2,
+                              Decile == 5 ~ 3,
+                              Decile == 7 ~ 4,
+                              Decile == 9 ~ 5,
+                              .default = NA)) %>%
+  filter(!is.na(Quintile)) %>%
+  dplyr::select(-Decile)
+
+write.csv(df_interpolated, 'Input Data/eurostat/ses_transformed.csv')
+

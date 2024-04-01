@@ -92,7 +92,6 @@ regulated <- read.xlsx('Input Data/Config/regulated_professions.xlsx') %>%
                                    country == "Estonia" ~ "EE")) %>%
   dplyr::filter(region == 'All Regions') %>%
   dplyr::select(-country)
-#TODO: potentially exclude observations that apply on the subnational level
 
 #NA for regulated df is 0, to prevent merging on NA professions in the ELF
 regulated[is.na(regulated)] <- 0
@@ -106,41 +105,44 @@ regulated %>%
   ggtitle('Regulated professions by country') %>%
   print()
 
-income_silc <- read.csv('Input Data/eurostat/income_transformed_SILC.csv') %>%
-  mutate(country_short = case_when(country_long == "Malta" ~ "MT",
-                                   country_long == "Sweden" ~ "SE",
-                                   country_long == "Norway" ~ "NO",
-                                   country_long == "Austria" ~ "AT",
-                                   country_long == "United Kingdom" ~ "UK",
-                                   country_long == "Ireland" ~ "IE",
-                                   country_long == "Luxembourg" ~ "LU",
-                                   country_long == "Belgium" ~ "BE",
-                                   country_long == "Romania" ~ "RO",
-                                   country_long == "Portugal" ~ "PT",
-                                   country_long == "Slovakia" ~ "SK",
-                                   country_long == "Czechia" ~ "CZ",
-                                   country_long == "Poland" ~ "PL",
-                                   country_long == "Italy" ~ "IT",
-                                   country_long == "France" ~ "FR",
-                                   country_long == "Greece" ~ "EL",
-                                   country_long == "Iceland" ~ "IS",
-                                   country_long == "Croatia" ~ "HR",
-                                   country_long == "Netherlands" ~ "NL",
-                                   country_long == "Germany" ~ "DE",
-                                   country_long == "Hungary" ~ "HU",
-                                   country_long == "Bulgaria" ~ "BG",
-                                   country_long == "Liechtenstein" ~ "LI",
-                                   country_long == "Spain" ~ "ES",
-                                   country_long == "Denmark" ~ "DK",
-                                   country_long == "Switzerland" ~ "CH",
-                                   country_long == "Slovenia" ~ "SI",
-                                   country_long == "Finland" ~ "FI",
-                                   country_long == "Latvia" ~ "LV",
-                                   country_long == "Cyprus" ~ "CY",
-                                   country_long == "Lithuania" ~ "LT",
-                                   country_long == "Estonia" ~ "EE")) %>%
-  filter(!is.na(country_short), !is.na(decile), !is.na(income)) %>%
-  rename(income_euro = income)
+# income_silc <- read.csv('Input Data/eurostat/income_transformed_SILC.csv') %>%
+#   mutate(country_short = case_when(country_long == "Malta" ~ "MT",
+#                                    country_long == "Sweden" ~ "SE",
+#                                    country_long == "Norway" ~ "NO",
+#                                    country_long == "Austria" ~ "AT",
+#                                    country_long == "United Kingdom" ~ "UK",
+#                                    country_long == "Ireland" ~ "IE",
+#                                    country_long == "Luxembourg" ~ "LU",
+#                                    country_long == "Belgium" ~ "BE",
+#                                    country_long == "Romania" ~ "RO",
+#                                    country_long == "Portugal" ~ "PT",
+#                                    country_long == "Slovakia" ~ "SK",
+#                                    country_long == "Czechia" ~ "CZ",
+#                                    country_long == "Poland" ~ "PL",
+#                                    country_long == "Italy" ~ "IT",
+#                                    country_long == "France" ~ "FR",
+#                                    country_long == "Greece" ~ "EL",
+#                                    country_long == "Iceland" ~ "IS",
+#                                    country_long == "Croatia" ~ "HR",
+#                                    country_long == "Netherlands" ~ "NL",
+#                                    country_long == "Germany" ~ "DE",
+#                                    country_long == "Hungary" ~ "HU",
+#                                    country_long == "Bulgaria" ~ "BG",
+#                                    country_long == "Liechtenstein" ~ "LI",
+#                                    country_long == "Spain" ~ "ES",
+#                                    country_long == "Denmark" ~ "DK",
+#                                    country_long == "Switzerland" ~ "CH",
+#                                    country_long == "Slovenia" ~ "SI",
+#                                    country_long == "Finland" ~ "FI",
+#                                    country_long == "Latvia" ~ "LV",
+#                                    country_long == "Cyprus" ~ "CY",
+#                                    country_long == "Lithuania" ~ "LT",
+#                                    country_long == "Estonia" ~ "EE")) %>%
+#   filter(!is.na(country_short), !is.na(decile), !is.na(income)) %>%
+#   rename(income_euro = income)
+
+income_ses <- read.csv('Input Data/eurostat/ses_transformed.csv') %>%
+  select(-X)
 
 #loop over countries
 for(country in countries_to_analyze){
@@ -240,8 +242,13 @@ for(country in countries_to_analyze){
   
   #merge with SILC income data
   country_df <- country_df %>%
-    dplyr::left_join(income_silc %>% dplyr::select(country_short, year, decile, income_euro),
-                     by = c('COUNTRY' = 'country_short', 'REFYEAR' = 'year', 'INCDECIL' = 'decile'))
+    dplyr::mutate(Quintile = case_when(INCDECIL %in% c(1,2) ~ 1,
+                                       INCDECIL %in% c(3,4) ~ 2,
+                                       INCDECIL %in% c(5,6) ~ 3,
+                                       INCDECIL %in% c(7,8) ~ 4,
+                                       INCDECIL %in% c(9,10) ~ 5,
+                                       .default = NA)) %>%
+    dplyr::left_join(income_ses, by = c('COUNTRY', 'REFYEAR' = 'YEAR', 'Quintile'))
   
   #save country level data
   write_feather(country_df, paste0(outut_fp, 'merged_country_external_2006_onwards_', country, '.feather'))

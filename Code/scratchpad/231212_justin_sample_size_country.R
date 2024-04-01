@@ -11,20 +11,7 @@ library(arrow)
 setwd("/Users/justin-casimirbraun/Brainwaste")
 
 #set up output files
-dir.create('Results/scratchpad', showWarnings = F)
-dir.create('Results/scratchpad/sample_size', showWarnings = F)
-
-#countries
-countries_to_analyze <- c('AT',
-                          'BE', 'BG', 'CH',
-                          'CY', 'CZ', 'DK', 'EE',
-                          'EL', 'ES', 'FI', 'FR',
-                          'HR', 'HU', 'IE', 'IS', 
-                          'IT', 'LT', 'LU', 'LV',
-                          'MT', 'NL', 'NO', 'PL',
-                          'PT', 'RO', 'SE', 'SI',
-                          'SK', 'UK'
-)
+dir.create(paste0(cur_date, 'Results/scratchpad/sample_size/'), showWarnings = F)
 
 #loop over countries
 for(country in countries_to_analyze){
@@ -37,5 +24,5 @@ for(country in countries_to_analyze){
     dplyr::group_by(REFYEAR) %>%
     dplyr::count()
   
-  write.csv(temp_df, paste0('Results/scratchpad/sample_size/sample_size_year_', country, '.csv'))
+  write.csv(temp_df, paste0(cur_date, 'Results/scratchpad/sample_size/sample_size_year_', country, '.csv'))
 }

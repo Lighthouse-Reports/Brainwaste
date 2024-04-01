@@ -23,7 +23,7 @@ shortage22 <- read.xlsx('Input Data/Config/EURES_shortage_2022.xlsx') %>%
          Country = case_when(Country %in% c('LV', 'LT', 'EE') ~ 'Baltics',
                              Country %in% c('PL', 'CZ', 'SK', 'HU') ~ 'Visegrad',
                              Country %in% c('RO', 'BG') ~ 'eu07',
-                             Country %in% c('PL', 'CZ', 'SK', 'HU') ~ 'yugo',
+                             Country %in% c('HR', 'SI') ~ 'yugo',
                              .default = Country)) %>%
   dplyr::select(Country, ISCO08_short)
 
@@ -80,6 +80,7 @@ for(country in countries_to_analyze){
            overed_diff = overed_immigrant - overed_native)
   
   shortage_educ <- country_df %>%
+    filter(REFYEAR > 2016, is_immigrant == 0) %>%
     group_by(COUNTRY, hatfield1d) %>%
     summarise(shortage_nace = mean(shortage, na.rm = T),
               shortage_eures = 100*mean(shortage_eures, na.rm = T))

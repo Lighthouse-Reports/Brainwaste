@@ -14,6 +14,10 @@ input_fp <- 'Input Data/ELF_Merged/final/merged_country_final_2006_onwards_'
 output_fp <- paste0(cur_date, 'Results/h3_2/')
 dir.create(output_fp, showWarnings = F)
 
+cur_year <- 2020
+
+gdp <- read.csv('Input Data/eurostat/gdp_transformed.csv') %>%
+  dplyr::select(country_short, gdp)
 
 master_df <- data.frame(country = character(),
                         real_wage_mean = numeric(),
@@ -34,17 +38,17 @@ master_df <- data.frame(country = character(),
 
 for(country in countries_to_analyze){
   print(country)
-  country_df <- arrow::read_feather(paste0(input_fp, country, '.feather'))
+  country_df <- arrow::read_feather(paste0(input_fp, country, '_ALL.feather'))
   
   country_df <- country_df %>%
       mutate(hatfield1d = as.factor(hatfield1d),
              REGION_2D = as.factor(REGION_2D))
   
   native_df <- country_df %>%
-    filter(REFYEAR == 2019, is_immigrant == 0)
+    filter(REFYEAR == cur_year, is_immigrant == 0)
   
-  fr <- 'income_euro ~'
-  if(nrow(unique(native_df[,'income_euro']))<=1) next
+  fr <- 'wages_annual ~'
+  if(nrow(unique(native_df[,'wages_annual']))<=1) next
   if(nrow(unique(native_df[,'age_years']))>1) fr <-paste0(fr, 'age_years + age_years^2')
   if(nrow(unique(native_df[,'SEX']))>1) fr <-paste0(fr, '+ SEX')
   if(nrow(unique(native_df[,'HHNBCHILD']))>1) fr <-paste0(fr, '+ HHNBCHILD')
@@ -72,12 +76,12 @@ for(country in countries_to_analyze){
   immigrant_df$predicted_earnings_educ <- predicted_earnings_educ
   
   immigrant_df <- immigrant_df %>%
-    mutate(wage_diff_basic = predicted_earnings_basic - income_euro,
-           wage_diff_educ = predicted_earnings_educ - income_euro)
+    mutate(wage_diff_basic = predicted_earnings_basic - wages_annual,
+           wage_diff_educ = predicted_earnings_educ - wages_annual)
   
   cur_sum_table <- immigrant_df %>%
-    summarise(real_wage_mean = mean(income_euro, na.rm = T),
-              real_wage_sd = sd(income_euro, na.rm = T),
+    summarise(real_wage_mean = mean(wages_annual, na.rm = T),
+              real_wage_sd = sd(wages_annual, na.rm = T),
               basic_predicted_wage_mean = mean(predicted_earnings_basic, na.rm = T),
               basic_predicted_wage_sd = sd(predicted_earnings_basic, na.rm = T),
               educ_predicted_wage_mean = mean(predicted_earnings_educ, na.rm = T),
@@ -111,9 +115,36 @@ master_df <- master_df %>%
          macro_potential_uemp = diff_uemp_rate * uemp_penalty * employed_immigrants *(-1),
          macro_potential_overed = diff_overed_rate * overed_penalty * employed_immigrants*(-1))
 
-write.csv(master_df, paste0(output_fp, 'earnings_potential_immigrants.csv'))
+eu_row <- data.frame(country = 'EU',
+                     real_wage_mean = mean(master_df$real_wage_mean, na.rm = T),
+                     basic_predicted_wage_mean = mean(master_df$basic_predicted_wage_mean, na.rm = T),
+                     educ_predicted_wage_mean = mean(master_df$educ_predicted_wage_mean, na.rm = T),
+                     basic_wage_diff_mean = mean(master_df$basic_wage_diff_mean, na.rm = T),
+                     educ_wage_diff_mean = mean(master_df$educ_wage_diff_mean, na.rm = T),
+                     uemp_penalty = mean(master_df$uemp_penalty, na.rm = T),
+                     overed_penalty = mean(master_df$overed_penalty, na.rm = T),
+                     employed_immigrants = sum(master_df$employed_immigrants, na.rm = T),
+                     macro_potential_basic = sum(master_df$macro_potential_basic, na.rm = T),
+                     macro_potential_educ = sum(master_df$macro_potential_educ, na.rm = T),
+                     macro_potential_uemp = sum(master_df$macro_potential_uemp, na.rm = T),
+                     macro_potential_overed = sum(master_df$macro_potential_overed, na.rm = T))
+master_df <- master_df %>%
+  bind_rows(eu_row)
+
+
+master_df_gdp <- master_df %>%
+  left_join(gdp, by = c('country' = 'country_short')) %>%
+  mutate(gdp = ifelse(country == 'EU', sum(gdp, na.rm = T), gdp)) %>%
+  mutate(macro_potential_basic_share_gdp = macro_potential_basic/gdp,
+            macro_potential_educ_share_gdp = macro_potential_educ/gdp,
+            macro_potential_uemp_share_gdp = macro_potential_uemp/gdp,
+            macro_potential_overed_share_gdp = macro_potential_overed/gdp)
+
+write.csv(master_df_gdp, paste0(output_fp, 'earnings_potential_immigrants_', as.character(cur_year), '.csv'))
+
 
 master_df_long <- master_df %>%
+  filter(country != 'EU') %>%
   dplyr::select(c('country', starts_with('macro'))) %>%
   pivot_longer(cols = starts_with('macro'), names_to = 'potential_type', values_to = 'euro')
 
@@ -123,4 +154,4 @@ ggplot(master_df_long, aes(x = potential_type, y = euro))+
   scale_y_continuous(labels = unit_format(unit = "M", scale = 1e-6))+
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
-ggsave(paste0(output_fp, 'earnings_potential_immigrants.png'), plot = last_plot(), width = 15, height = 20)
+ggsave(paste0(output_fp, 'earnings_potential_immigrants', as.character(cur_year), '.png'), plot = last_plot(), width = 15, height = 20)
