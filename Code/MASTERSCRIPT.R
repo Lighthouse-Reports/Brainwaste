@@ -37,6 +37,8 @@ source('Code/analysis/h3_1.R', local = T)
 
 source('Code/analysis/h3_2.R', local = T)
 
+source('Code/analysis/h4.R', local = T)
+
 ### visualize descriptives ###
 source('Code/displays/visualize_var_counts.R', local = T)
 
