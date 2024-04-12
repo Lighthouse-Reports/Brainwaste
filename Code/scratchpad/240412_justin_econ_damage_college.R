@@ -11,7 +11,7 @@ library(scales)
 
 #set up fps
 input_fp <- 'Input Data/ELF_Merged/final/merged_country_final_2006_onwards_'
-output_fp <- paste0(cur_date, 'Results/h3_2/')
+output_fp <- paste0(cur_date, 'Results/scratchpad/econ_damage_college/')
 dir.create(output_fp, showWarnings = F)
 
 cur_year <- 2020
@@ -34,15 +34,15 @@ master_df <- data.frame(country = character(),
                         diff_overed_rate = numeric(),
                         uemp_penalty = numeric(),
                         overed_penalty = numeric()
-                        )
+)
 
 for(country in countries_to_analyze){
-  print(country)
-  country_df <- arrow::read_feather(paste0(input_fp, country, '_ALL.feather'))
+  if(country %in% c('DK', 'FI', 'SE', 'IS', 'NO')) next #CHECK skip nordics
+  country_df <- arrow::read_feather(paste0(input_fp, country, '.feather')) #CHECK load college only data
   
   country_df <- country_df %>%
-      mutate(hatfield1d = as.factor(hatfield1d),
-             REGION_2D = as.factor(REGION_2D))
+    mutate(hatfield1d = as.factor(hatfield1d),
+           REGION_2D = as.factor(REGION_2D))
   
   native_df <- country_df %>%
     filter(REFYEAR == cur_year, is_immigrant == 0)
@@ -106,14 +106,18 @@ employed_immigrants <- read.csv('Input Data/eurostat/employed_immigrants_transfo
   dplyr::select(country_short, count) %>%
   rename(employed_immigrants = count) %>%
   mutate(employed_immigrants = as.numeric(employed_immigrants))
-  
+
+college_educated <- read.csv(paste0(cur_date, 'Results/scratchpad/240305_maud_questions/ college_educated_country_year.csv')) %>% #CHECK import shares of college educated people
+  filter(REFYEAR == cur_year, is_immigrant == 1)
 
 master_df <- master_df %>%
   left_join(employed_immigrants, by = c('country' = 'country_short')) %>%
-  mutate(macro_potential_basic = basic_wage_diff_mean * employed_immigrants,
-         macro_potential_educ = educ_wage_diff_mean * employed_immigrants,
-         macro_potential_uemp = diff_uemp_rate * uemp_penalty * employed_immigrants *(-1),
-         macro_potential_overed = diff_overed_rate * overed_penalty * employed_immigrants*(-1))
+  left_join(college_educated, by = c('country' = 'COUNTRY')) %>% #CHECK merge with shares college educated immigrants
+  mutate(employed_college_educated_immigrants = employed_immigrants * mean_college_educated, #CHECK calculate number of college educated immigrants
+         macro_potential_basic = basic_wage_diff_mean * employed_college_educated_immigrants,
+         macro_potential_educ = educ_wage_diff_mean * employed_college_educated_immigrants,
+         macro_potential_uemp = diff_uemp_rate * uemp_penalty * employed_college_educated_immigrants *(-1),
+         macro_potential_overed = diff_overed_rate * overed_penalty * employed_college_educated_immigrants*(-1))
 
 eu_row <- data.frame(country = 'EU',
                      real_wage_mean = mean(master_df$real_wage_mean, na.rm = T),
@@ -136,9 +140,9 @@ master_df_gdp <- master_df %>%
   left_join(gdp, by = c('country' = 'country_short')) %>%
   mutate(gdp = ifelse(country == 'EU', sum(gdp, na.rm = T), gdp)) %>%
   mutate(macro_potential_basic_share_gdp = macro_potential_basic/gdp,
-            macro_potential_educ_share_gdp = macro_potential_educ/gdp,
-            macro_potential_uemp_share_gdp = macro_potential_uemp/gdp,
-            macro_potential_overed_share_gdp = macro_potential_overed/gdp)
+         macro_potential_educ_share_gdp = macro_potential_educ/gdp,
+         macro_potential_uemp_share_gdp = macro_potential_uemp/gdp,
+         macro_potential_overed_share_gdp = macro_potential_overed/gdp)
 
 write.csv(master_df_gdp, paste0(output_fp, 'earnings_potential_immigrants_', as.character(cur_year), '.csv'))
 

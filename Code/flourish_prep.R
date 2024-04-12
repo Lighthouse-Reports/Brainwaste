@@ -24,8 +24,8 @@ countries_match <- data.frame(COUNTRY =  c('AT', 'BE', 'CH','CY', 'DK',
                               country_long = c('Austria', 'Belgium', 'Switzerland', 'Cyprus', 'Denmark',
                                                'Greece', 'Spain', 'Finland', 'France', 'Ireland',
                                                'Iceland', 'Italy', 'Luxembourg', 'Malta', 'Netherlands',
-                                               'Norway', 'Portugal', 'Sweden', 'UK',
-                                               'Baltics', 'Romania/Bulgaria', 'Visegrad', 'Croatia/Slovenia', 'EU')
+                                               'Norway', 'Portugal', 'Sweden', 'UK*',
+                                               'Baltics', 'Romania/Bulgaria', 'Visegrad', 'Croatia/Slovenia', 'Europe**')
                               )
 
 
@@ -356,7 +356,7 @@ write.csv(fig7_ready, paste0(output_fp, 'fig7_occupation.csv'))
 fig8_raw <- read.csv(paste0(cur_date, 'Results/scratchpad/rq03_01/education_occupation_brainwaste.csv'))
 
 fig8_ready <- fig8_raw %>%
-  filter(count > 20, hatfield_text != 'basic') %>%
+  filter(count > 50, hatfield_text != 'basic') %>%
   left_join(countries_match, by = 'COUNTRY') %>%
   dplyr::select(country_long, hatfield_text, Occupation_Text, share_uemp, share_overed, share_temp, share) %>%
   mutate(share_uemp = 100*share_uemp,

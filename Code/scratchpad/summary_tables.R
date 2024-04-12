@@ -94,7 +94,7 @@ for(country in countries_to_analyze){
   if(n_distinct(country_df_17[,'is_partnered'])>1) fr <-paste0(fr, 'is_partnered + ')
   if(n_distinct(country_df_17[,'hat_isced'])>1) fr <-paste0(fr, 'hat_isced + ')
   if(n_distinct(country_df_17[,'REGION_2D'])>1) fr <-paste0(fr, 'as.factor(REGION_2D) + ')
-  if(n_distinct(country_df_17[,'REFYEAR'])>1) fr <-paste0(fr, 'REFYEAR')
+  if(n_distinct(country_df_17[,'REFYEAR'])>1) fr <-paste0(fr, 'as.factor(REFYEAR)')
  
   if(n_distinct(country_df_17[,'uemp'])>1){
     fit_underemp_17 <- lm(data = country_df_17, formula = paste0('uemp', fr)) %>%

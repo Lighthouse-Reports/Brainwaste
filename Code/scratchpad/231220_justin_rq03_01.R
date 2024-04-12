@@ -24,6 +24,7 @@ fp_2 <- '.feather'
 master_df_hatfield <- data.frame()
 master_df_occupation <- data.frame()
 master_df_occupation_hatfield <- data.frame()
+master_df_occupation_hatfield_natives <- data.frame()
 for(country in countries_to_analyze){
   fp <- paste0(fp_1, country, fp_2)
   cur_df <- arrow::read_feather(fp)
@@ -60,6 +61,18 @@ for(country in countries_to_analyze){
   
   master_df_occupation_hatfield <- master_df_occupation_hatfield %>%
     bind_rows(cur_df_hatfield_occupation)
+  
+  cur_df_hatfield_occupation_natives <- cur_df %>% #CHECK occupation education df for natives
+    filter(REFYEAR > 2016, is_immigrant == 0, !is.na(hatfield1d), !is.na(ISCO08_3D)) %>%
+    group_by(COUNTRY, hatfield1d, ISCO08_3D) %>%
+    summarise(share_uemp = mean(uemp, na.rm = T),
+              share_overed = mean(overed_1sd_hat_isced, na.rm = T),
+              share_temp = mean(is_temp, na.rm = T),
+              count = n()) %>%
+    filter(count > 50) #included the filter here right away
+  
+  master_df_occupation_hatfield_natives <- master_df_occupation_hatfield_natives %>%
+    bind_rows(cur_df_hatfield_occupation_natives)
 }
 
 master_df_hatfield <- master_df_hatfield %>%
@@ -207,3 +220,25 @@ master_df_occupation_hatfield <- master_df_occupation_hatfield %>%
   mutate(share = count/sum(count, na.rm = T)) %>%
   ungroup()
 write.csv(master_df_occupation_hatfield, paste0(outpath, 'education_occupation_brainwaste.csv'))
+
+
+# CHECK: do the same processing on the native df as on the immigrant df just above
+
+master_df_occupation_hatfield_natives <- master_df_occupation_hatfield_natives %>%
+  mutate(hatfield_text = case_when(hatfield1d == 0 ~ 'basic',
+                                   hatfield1d == 1 ~ 'education',
+                                   hatfield1d == 2 ~ 'arts/humanities',
+                                   hatfield1d == 3 ~ 'social sciences',
+                                   hatfield1d == 4 ~ 'business/law',
+                                   hatfield1d == 5 ~ 'natural sciences',
+                                   hatfield1d == 6 ~ 'ict',
+                                   hatfield1d == 7 ~ 'engineering',
+                                   hatfield1d == 8 ~ 'agriculture',
+                                   hatfield1d == 9 ~ 'health',
+                                   hatfield1d == 10 ~ 'services',
+                                   .default = 'Unknown Field')) %>%
+  left_join(isco, by = c('ISCO08_3D' = 'ISCO')) %>%
+  group_by(COUNTRY) %>%
+  mutate(share = count/sum(count, na.rm = T)) %>%
+  ungroup()
+write.csv(master_df_occupation_hatfield_natives, paste0(outpath, 'education_occupation_brainwaste_natives.csv'))
