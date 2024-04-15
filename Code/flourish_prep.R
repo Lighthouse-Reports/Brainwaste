@@ -102,11 +102,42 @@ EU_map <-  eurostat::get_eurostat_geospatial(output_class = 'sf',
                                                        resolution = '60',
                                                        nuts_level = '0',
                                                        year = '2021')
+yugo_map <- EU_map %>% 
+  filter(NUTS_ID %in% c('SI', 'HR')) %>%
+  st_union() %>%
+  as.data.frame() %>%
+  mutate(NUTS_ID = 'yugo') %>%
+  st_as_sf()
+
+eu07_map <- EU_map %>% 
+  filter(NUTS_ID %in% c('BG', 'RO')) %>%
+  st_union() %>%
+  as.data.frame() %>%
+  mutate(NUTS_ID = 'eu07') %>%
+  st_as_sf()
+
+visegrad_map <- EU_map %>% 
+  filter(NUTS_ID %in% c('PL', 'CZ', 'SK', 'HU')) %>%
+  st_union() %>%
+  as.data.frame() %>%
+  mutate(NUTS_ID = 'Visegrad') %>%
+  st_as_sf()
+
+baltics_map <- EU_map %>% 
+  filter(NUTS_ID %in% c('EE', 'LT', 'LV')) %>%
+  st_union() %>%
+  as.data.frame() %>%
+  mutate(NUTS_ID = 'Baltics') %>%
+  st_as_sf()  
+
+EU_map <- EU_map %>%
+  bind_rows(yugo_map, eu07_map, visegrad_map, baltics_map)
+
 fig_1a_map <- fig1_htable_college_ready %>%
-  dplyr::select(-metric_short, -order) %>%
+  dplyr::select(COUNTRY, country_long, metric, `Native (mean)`, `Immigrant (mean)`, `Raw Difference`, `Controlled Difference`, `significance`) %>%
   pivot_wider(names_from = 'metric', values_from =  c('Native (mean)', 'Immigrant (mean)', 'Raw Difference', 'Controlled Difference', 'significance')) %>%
   left_join(EU_map, by = c('COUNTRY' = 'NUTS_ID')) %>%
-  filter(!is.na(geo)) %>%
+  filter(COUNTRY != 'EU') %>%
   st_as_sf()
 
 st_write(fig_1a_map, paste0(output_fp, 'fig1a_bw_map.geojson'), overwrite = T)
@@ -397,7 +428,7 @@ fig9_ready <- fig9_raw %>%
                            grepl('uemp', names) & group == 'individual earnings differences (EURO)' ~ 'under-employment penalty',
                            grepl('uemp', names) ~ 'immigrant % under-employment declines to native % under-employment',
                            grepl('overed', names) & group == 'individual earnings differences (EURO)'~ 'over-qualification penalty',
-                           grepl('overed', names) ~ 'immigrant % under-qualification declines to native % over-qualification',
+                           grepl('overed', names) ~ 'immigrant % over-qualification declines to native % over-qualification',
                            .default = NA)) %>%
   left_join(countries_match, by = c('country' = 'COUNTRY'))
 
